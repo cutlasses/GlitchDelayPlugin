@@ -97,7 +97,8 @@ void GLITCH_DELAY_VIEW::paint( Graphics& g )
 
 const int GlitchDelayPluginAudioProcessorEditor::DIAL_ROW_COUNT        = 4;
 const int GlitchDelayPluginAudioProcessorEditor::DIAL_SEPARATION       = 30;
-const int GlitchDelayPluginAudioProcessorEditor::DIAL_SIZE             = 95;
+const int GlitchDelayPluginAudioProcessorEditor::DIAL_SIZE_PRIMARY     = 95;
+const int GlitchDelayPluginAudioProcessorEditor::DIAL_SIZE_SECONDARY   = 75;
 const int GlitchDelayPluginAudioProcessorEditor::LABEL_HEIGHT          = 10;
 const int GlitchDelayPluginAudioProcessorEditor::GLITCH_DELAY_HEIGHT   = 60;
 const int GlitchDelayPluginAudioProcessorEditor::BORDER                = 40;
@@ -146,8 +147,8 @@ GlitchDelayPluginAudioProcessorEditor::GlitchDelayPluginAudioProcessorEditor (Gl
         ++m_num_dial_rows;
     }
     
-    const float width       = ( BORDER * 2.0f ) + DIAL_SIZE * DIAL_ROW_COUNT;
-    const float height      = ( BORDER * 2.0f ) + ( DIAL_SIZE * m_num_dial_rows ) + (DIAL_SEPARATION * m_num_dial_rows) + GLITCH_DELAY_HEIGHT;
+    const float width       = ( BORDER * 2.0f ) + DIAL_SIZE_PRIMARY * DIAL_ROW_COUNT;
+    const float height      = ( BORDER * 2.0f ) + DIAL_SIZE_PRIMARY + ( DIAL_SIZE_SECONDARY * ( m_num_dial_rows - 1 ) ) + (DIAL_SEPARATION * m_num_dial_rows) + GLITCH_DELAY_HEIGHT;
     setSize( width, height );
     
     // start the callback timer
@@ -185,15 +186,17 @@ void GlitchDelayPluginAudioProcessorEditor::resized()
     
     for( int row = 0; row < m_num_dial_rows; ++row )
     {
-        Rectangle<int> row_rect = reduced.removeFromTop( DIAL_SIZE );
+		const int dial_size_for_row	= row == 0 ? DIAL_SIZE_PRIMARY : DIAL_SIZE_SECONDARY;
+
+		Rectangle<int> row_rect		= reduced.removeFromTop( dial_size_for_row );
         
-        const int row_size      = min_val( DIAL_ROW_COUNT, m_param_sliders.size() - dial );
-        const int remainder     = ( DIAL_ROW_COUNT - row_size ) * DIAL_SIZE;
+        const int row_size			= min_val( DIAL_ROW_COUNT, m_param_sliders.size() - dial );
+        const int remainder			= ( DIAL_ROW_COUNT - row_size ) * dial_size_for_row;
         row_rect.reduce( remainder / 2, 0 );
         
         for( int col = 0; col < row_size; ++col )
         {
-            Rectangle<int> dial_bounds          = row_rect.removeFromLeft( DIAL_SIZE );
+            Rectangle<int> dial_bounds          = row_rect.removeFromLeft( dial_size_for_row );
             const Rectangle<int> label_bounds   = dial_bounds.removeFromBottom( LABEL_HEIGHT );
             
             m_param_labels[dial]->setBounds( label_bounds );

@@ -84,7 +84,8 @@ private:
     // access the processor object that created it.
 
     static const int                                DIAL_ROW_COUNT;
-    static const int                                DIAL_SIZE;
+    static const int                                DIAL_SIZE_PRIMARY;
+	static const int                                DIAL_SIZE_SECONDARY;
     static const int                                DIAL_SEPARATION;
     static const int                                LABEL_HEIGHT;
     static const int                                GLITCH_DELAY_HEIGHT;
