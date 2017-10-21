@@ -49,6 +49,14 @@ namespace
             b1.setSample( channel, s, mixed );
         }
     }
+	
+	enum PLAY_HEAD_INDICES
+	{
+		LOW_HEAD = 0,
+		NORMAL_HEAD = 1,
+		HIGH_HEAD = 2,
+		REVERSE_HEAD = 4
+	};
 }
 
 //==============================================================================
@@ -65,67 +73,94 @@ GlitchDelayPluginAudioProcessor::GlitchDelayPluginAudioProcessor()
                        .withOutput ("Output", AudioChannelSet::stereo(), true)
                      #endif
                        ),
-    m_mix( nullptr ),
-    m_loop_size( nullptr ),
-    m_jitter( nullptr ),
-    m_feedback( nullptr ),
-    m_low_head(nullptr),
-    m_normal_head(nullptr),
-    m_high_head(nullptr),
-    m_reverse_head(nullptr)
+	m_mix( nullptr ),
+	m_feedback( nullptr ),
+	m_low_head_mix( nullptr ),
+	m_low_head_size( nullptr ),
+	m_low_head_jitter( nullptr ),
+	m_normal_head_mix( nullptr ),
+	m_normal_head_size( nullptr ),
+	m_normal_head_jitter( nullptr ),
+	m_high_head_mix( nullptr ),
+	m_high_head_size( nullptr ),
+	m_high_head_jitter( nullptr ),
+	m_reverse_head_mix( nullptr )
 #endif
 {
     // create the wrapped effect
     m_effect = make_unique< GLITCH_DELAY_EFFECT >();
     
-    addParameter( m_mix = new AudioParameterFloat(          "mix",          // parameterID
-                                                            "Mix",          // parameter name
-                                                            0.0f,           // minimum value
-                                                            1.0f,           // maximum value
-                                                            0.5f ) );       // default value
-    
-    addParameter( m_loop_size = new AudioParameterFloat(    "loop_size",    // parameterID
-                                                            "Loop Size",    // parameter name
-                                                            0.0f,           // minimum value
-                                                            1.0f,           // maximum value
-                                                            0.5f ) );       // default value
-    
-    addParameter( m_jitter = new AudioParameterFloat(       "jitter",       // parameterID
-                                                            "Jitter",       // parameter name
-                                                            0.0f,           // minimum value
-                                                            1.0f,           // maximum value
-                                                            0.5f ) );       // default value
-    
-    addParameter( m_feedback = new AudioParameterFloat(     "feedback",     // parameterID
-                                                            "Feedback",     // parameter name
-                                                            0.0f,           // minimum value
-                                                            MAX_FEEDBACK,   // maximum value
-                                                            0.5f ) );       // default value
-    
-    addParameter( m_low_head = new AudioParameterFloat(     "low_head",     // parameterID
-                                                            "Low Head",     // parameter name
-                                                            0.0f,           // minimum value
-                                                            0.25f,          // maximum value
-                                                            0.1f ) );       // default value
-    
-    addParameter( m_normal_head = new AudioParameterFloat(  "normal_head",  // parameterID
-                                                            "Normal Head",  // parameter name
-                                                            0.0f,           // minimum value
-                                                            0.25f,          // maximum value
-                                                            0.2f ) );      // default value
-    
-    addParameter( m_high_head = new AudioParameterFloat(    "high_head",    // parameterID
-                                                            "High Head",    // parameter name
-                                                            0.0f,           // minimum value
-                                                            0.25f,          // maximum value
-                                                            0.1f ) );       // default value
-    
-    addParameter( m_reverse_head = new AudioParameterFloat( "reverse_head", // parameterID
-                                                            "Reverse Head", // parameter name
-                                                            0.0f,           // minimum value
-                                                            0.25f,          // maximum value
-                                                            0.1f ) );       // default value
+    addParameter( m_mix = new AudioParameterFloat(					"mix",          		// parameterID
+																	"Mix",          		// parameter name
+																	0.0f,           		// minimum value
+																	1.0f,           		// maximum value
+																	0.5f ) );       		// default value
+	
+	addParameter( m_feedback = new AudioParameterFloat(				"feedback",     		// parameterID
+																	"Feedback",     		// parameter name
+																	0.0f,           		// minimum value
+																	MAX_FEEDBACK,   		// maximum value
+													   				0.5f ) );       		// default value
+	
+	addParameter( m_low_head_mix = new AudioParameterFloat(			"low_head_mix",    		// parameterID
+																	"Low Head Mix",    		// parameter name
+																	0.0f,           		// minimum value
+																	1.0f,           		// maximum value
+																	0.5f ) );       		// default value
+	
+	addParameter( m_low_head_size = new AudioParameterFloat(		"low_head_size",    	// parameterID
+																   	"Low Head Size",    	// parameter name
+																   	0.0f,           		// minimum value
+																   	1.0f,           		// maximum value
+																   	0.5f ) );       		// default value
+	
+	addParameter( m_low_head_jitter = new AudioParameterFloat(		"low_head_jitter",    	// parameterID
+																	"Low Head Jitter",    	// parameter name
+																	0.0f,           		// minimum value
+																	1.0f,           		// maximum value
+																	0.5f ) );       		// default value
 
+	addParameter( m_normal_head_mix = new AudioParameterFloat(		"normal_head_mix",    	// parameterID
+																	"Normal Head Mix",    	// parameter name
+																	0.0f,           		// minimum value
+																	1.0f,           		// maximum value
+																	0.5f ) );       		// default value
+	
+	addParameter( m_normal_head_size = new AudioParameterFloat(		"normal_head_size",    	// parameterID
+																	"Normal Head Size",    	// parameter name
+																	0.0f,           		// minimum value
+																	1.0f,           		// maximum value
+																	0.5f ) );       		// default value
+	
+	addParameter( m_normal_head_jitter = new AudioParameterFloat(	"normal_head_jitter",	// parameterID
+																	"Normal Head Jitter",	// parameter name
+																	0.0f,           		// minimum value
+																	1.0f,           		// maximum value
+																	0.5f ) );       		// default value
+	
+	addParameter( m_high_head_mix = new AudioParameterFloat(		"high_head_mix",    	// parameterID
+																	"High Head Mix",    	// parameter name
+																	0.0f,           		// minimum value
+																	1.0f,           		// maximum value
+																	0.5f ) );       		// default value
+	
+	addParameter( m_high_head_size = new AudioParameterFloat(		"high_head_size",    	// parameterID
+															   		"High Head Size",    	// parameter name
+															   		0.0f,           		// minimum value
+																	1.0f,           		// maximum value
+															   		0.5f ) );       		// default value
+	
+	addParameter( m_high_head_jitter = new AudioParameterFloat(		"high_head_jitter",		// parameterID
+																	"High Head Jitter",		// parameter name
+																	0.0f,           		// minimum value
+																	1.0f,           		// maximum value
+																	0.5f ) );       		// default value
+	
+	addParameter( m_reverse_head_mix = new AudioParameterFloat(		"reverse_head_mix",		// parameterID
+															   		"Reverse Head Mix",		// parameter name
+															   		0.0f,           		// minimum value
+															   		1.0f,           		// maximum value
+															   		0.5f ) );       		// default value
 }
 
 GlitchDelayPluginAudioProcessor::~GlitchDelayPluginAudioProcessor()
@@ -248,9 +283,15 @@ void GlitchDelayPluginAudioProcessor::processBlock (AudioSampleBuffer& buffer, M
 	}
 	
 	m_effect->pre_process_audio( buffer, m_effect->num_input_channels(), m_effect->num_output_channels() );
+
+	m_effect->set_loop_size( LOW_HEAD, *m_low_head_size );
+	m_effect->set_jitter( LOW_HEAD, *m_low_head_jitter );
+	m_effect->set_loop_size( NORMAL_HEAD, *m_normal_head_size );
+	m_effect->set_jitter( NORMAL_HEAD, *m_normal_head_jitter );
+	m_effect->set_loop_size( HIGH_HEAD, *m_high_head_size );
+	m_effect->set_jitter( HIGH_HEAD, *m_high_head_jitter );
 	
-	m_effect->set_speed( *m_jitter );
-	m_effect->set_loop_size( *m_loop_size );
+	
 	m_effect->set_loop_moving(false);
 	m_effect->update();
 	
@@ -258,7 +299,7 @@ void GlitchDelayPluginAudioProcessor::processBlock (AudioSampleBuffer& buffer, M
 	m_effect->post_process_audio( output );
 	
 	// mix down effect output to 1 channel
-	std::array<float, 4> mix_weights = { *m_low_head, *m_normal_head, *m_high_head, *m_reverse_head };
+	std::array<float, 4> mix_weights = { *m_low_head_mix, *m_normal_head_mix, *m_high_head_mix, *m_reverse_head_mix };
 	mix_down( output, mix_weights );
 	
 	// mix output with original input

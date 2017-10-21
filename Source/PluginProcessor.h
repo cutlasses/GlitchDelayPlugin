@@ -68,13 +68,21 @@ private:
     AudioSampleBuffer                                           m_prev_buffer;
     
     AudioParameterFloat*                                        m_mix;
-    AudioParameterFloat*                                        m_loop_size;
-    AudioParameterFloat*                                        m_jitter;
     AudioParameterFloat*                                        m_feedback;
-    AudioParameterFloat*                                        m_low_head;
-    AudioParameterFloat*                                        m_normal_head;
-    AudioParameterFloat*                                        m_high_head;
-    AudioParameterFloat*                                        m_reverse_head;
+	
+	AudioParameterFloat*                                        m_low_head_mix;
+    AudioParameterFloat*                                        m_low_head_size;
+	AudioParameterFloat*                                        m_low_head_jitter;
+	
+	AudioParameterFloat*                                        m_normal_head_mix;
+	AudioParameterFloat*                                        m_normal_head_size;
+	AudioParameterFloat*                                        m_normal_head_jitter;
+	
+	AudioParameterFloat*                                        m_high_head_mix;
+	AudioParameterFloat*                                        m_high_head_size;
+	AudioParameterFloat*                                        m_high_head_jitter;
+	
+    AudioParameterFloat*                                        m_reverse_head_mix;
     
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (GlitchDelayPluginAudioProcessor)
 };

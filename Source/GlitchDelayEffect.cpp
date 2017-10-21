@@ -788,16 +788,18 @@ void DELAY_BUFFER::debug_output()
 GLITCH_DELAY_EFFECT::GLITCH_DELAY_EFFECT() :
     m_delay_buffer(),
     m_play_heads{ PLAY_HEAD( m_delay_buffer, 0.5f ), PLAY_HEAD( m_delay_buffer, 1.0f ), PLAY_HEAD( m_delay_buffer, 2.0f ), PLAY_HEAD( m_delay_buffer, -1.0f ) },
-    m_speed_ratio(1.0f),
-    m_speed_in_samples(MAX_SHIFT_SPEED),
-    m_loop_size_ratio(1.0f),
-    m_loop_size_in_samples(MAX_LOOP_SIZE_IN_SAMPLES),
+	m_loop_size_ratio(),
+	m_jitter_ratio(),
     m_loop_moving(true),
     m_next_sample_size_in_bits(12),
     m_next_loop_moving(true),
     m_next_beat(false)
 {
-    
+	for( int i = 0; i < NUM_PLAY_HEADS; ++ i )
+	{
+		m_loop_size_ratio[i]	= 0.0f;
+		m_jitter_ratio[i]		= 0.0f;
+	}
 }
 
 void GLITCH_DELAY_EFFECT::process_audio_in_impl( int channel, const int16_t* sample_data, int num_samples )
@@ -809,9 +811,9 @@ void GLITCH_DELAY_EFFECT::process_audio_in_impl( int channel, const int16_t* sam
 
 void GLITCH_DELAY_EFFECT::process_audio_out_impl( int channel, int16_t* sample_data, int num_samples )
 {
-    
     ASSERT_MSG( !m_play_heads[channel].position_inside_next_read( m_delay_buffer.write_head(), num_samples ), "Non - reading over write buffer\n" ); // position after write head is OLD DATA
-    m_play_heads[channel].read_from_play_head( sample_data, num_samples );
+ 
+	m_play_heads[channel].read_from_play_head( sample_data, num_samples );
 }
 
 int GLITCH_DELAY_EFFECT::num_input_channels() const
@@ -837,15 +839,15 @@ void GLITCH_DELAY_EFFECT::update()
         PLAY_HEAD& play_head = m_play_heads[pi];
         if( m_loop_moving )
         {
-            play_head.set_shift_speed( m_speed_ratio );
+            play_head.set_shift_speed( m_jitter_ratio[pi] ); // TODO remove this mode?
         }
         else
         {
             play_head.set_shift_speed( 0.0f );
-            play_head.set_jitter( m_speed_ratio );
+            play_head.set_jitter( m_jitter_ratio[pi] );
         }
         
-        play_head.set_loop_size( m_loop_size_ratio );
+        play_head.set_loop_size( m_loop_size_ratio[pi] );
         
         if( m_next_beat && play_head.play_forwards() && !play_head.crossfade_active() ) // let the reverse head play regardless of beats
         {
@@ -890,19 +892,21 @@ void GLITCH_DELAY_EFFECT::set_bit_depth( int sample_size_in_bits )
     //set_bit_depth_impl( sample_size_in_bits );
 }
 
-void GLITCH_DELAY_EFFECT::set_speed( float speed )
-{
-    m_speed_ratio = speed;
-}
-
-void GLITCH_DELAY_EFFECT::set_loop_size( float loop_size )
-{
-    m_loop_size_ratio = loop_size;
-}
-
 void GLITCH_DELAY_EFFECT::set_loop_moving( bool moving )
 {
     m_next_loop_moving = moving;
+}
+
+void GLITCH_DELAY_EFFECT::set_loop_size( int play_head, float loop_size )
+{
+	ASSERT_MSG( play_head < NUM_PLAY_HEADS, "Invalid play head index" );
+	m_loop_size_ratio[play_head] = loop_size;
+}
+
+void GLITCH_DELAY_EFFECT::set_jitter( int play_head, float jitter )
+{
+	ASSERT_MSG( play_head < NUM_PLAY_HEADS, "Invalid play head index" );
+	m_jitter_ratio[play_head] = jitter;
 }
 
 void GLITCH_DELAY_EFFECT::set_beat()
