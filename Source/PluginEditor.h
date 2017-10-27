@@ -10,6 +10,8 @@
 
 #pragma once
 
+#include <vector>
+
 #include "../JuceLibraryCode/JuceHeader.h"
 #include "PluginProcessor.h"
 
@@ -83,7 +85,7 @@ private:
     // This reference is provided as a quick way for your editor to
     // access the processor object that created it.
 
-    static const int                                DIAL_ROW_COUNT;
+    static const int                                HEAD_DIAL_ROW_COUNT_MAX;
     static const int                                DIAL_SIZE_PRIMARY;
 	static const int                                DIAL_SIZE_SECONDARY;
     static const int                                DIAL_SEPARATION;
@@ -94,11 +96,18 @@ private:
     GlitchDelayPluginAudioProcessor&                m_processor;
     
     const GLITCH_DELAY_EFFECT&                      m_effect;
-    
-    OwnedArray<Slider>                              m_param_sliders;
-    OwnedArray<Label>                               m_param_labels;
-    
-    int                                             m_num_dial_rows;
+	
+	OwnedArray<Slider>                              m_all_dials;		// top row dials
+	OwnedArray<Label>                               m_all_labels;
+	
+	std::vector<Slider*>                            m_main_dials;		// top row dials
+    std::vector<Label*>                             m_main_labels;
+	
+	std::vector<Slider*>                            m_head_dials;		// dials for the tape heads
+	std::vector<Label*>                             m_head_labels;
+	
+	
+    int                                             m_num_head_dial_rows;
     
     std::unique_ptr<GLITCH_DELAY_VIEW>              m_glitch_view;
     

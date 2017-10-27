@@ -6,6 +6,13 @@
 
 //==============================================================================
 
+namespace
+{
+	void print_rect( const Rectangle<int> rect, const char* name )
+	{
+		std::cout << name << " (" << rect.getTopLeft().x << "," << rect.getTopLeft().y << ") width:" << rect.getWidth() << " height:" << rect.getHeight() << "\n";
+	}
+}
 
 GLITCH_DELAY_VIEW::GLITCH_DELAY_VIEW( int num_heads ) :
     m_tl_x(0),
@@ -95,13 +102,13 @@ void GLITCH_DELAY_VIEW::paint( Graphics& g )
 
 ///////////////////////////////////////////////////////////////////////////
 
-const int GlitchDelayPluginAudioProcessorEditor::DIAL_ROW_COUNT        = 4;
-const int GlitchDelayPluginAudioProcessorEditor::DIAL_SEPARATION       = 30;
-const int GlitchDelayPluginAudioProcessorEditor::DIAL_SIZE_PRIMARY     = 95;
-const int GlitchDelayPluginAudioProcessorEditor::DIAL_SIZE_SECONDARY   = 75;
-const int GlitchDelayPluginAudioProcessorEditor::LABEL_HEIGHT          = 10;
-const int GlitchDelayPluginAudioProcessorEditor::GLITCH_DELAY_HEIGHT   = 60;
-const int GlitchDelayPluginAudioProcessorEditor::BORDER                = 40;
+const int GlitchDelayPluginAudioProcessorEditor::HEAD_DIAL_ROW_COUNT_MAX	= 3;
+const int GlitchDelayPluginAudioProcessorEditor::DIAL_SEPARATION       		= 30;
+const int GlitchDelayPluginAudioProcessorEditor::DIAL_SIZE_PRIMARY     		= 95;
+const int GlitchDelayPluginAudioProcessorEditor::DIAL_SIZE_SECONDARY   		= 75;
+const int GlitchDelayPluginAudioProcessorEditor::LABEL_HEIGHT          		= 10;
+const int GlitchDelayPluginAudioProcessorEditor::GLITCH_DELAY_HEIGHT   		= 60;
+const int GlitchDelayPluginAudioProcessorEditor::BORDER                		= 40;
 
 GlitchDelayPluginAudioProcessorEditor::GlitchDelayPluginAudioProcessorEditor (GlitchDelayPluginAudioProcessor& p, const GLITCH_DELAY_EFFECT& effect) :
     AudioProcessorEditor(&p),
@@ -109,9 +116,13 @@ GlitchDelayPluginAudioProcessorEditor::GlitchDelayPluginAudioProcessorEditor (Gl
     Timer(),
     m_processor(p),
     m_effect(effect),
-    m_param_sliders(),
-    m_param_labels(),
-    m_num_dial_rows(0),
+	m_all_dials(),
+	m_all_labels(),
+    m_main_dials(),
+    m_main_labels(),
+	m_head_dials(),
+	m_head_labels(),
+    m_num_head_dial_rows(0),
     m_glitch_view(nullptr)
 {
     const OwnedArray<AudioProcessorParameter>& params = p.getParameters();
@@ -120,35 +131,46 @@ GlitchDelayPluginAudioProcessorEditor::GlitchDelayPluginAudioProcessorEditor (Gl
     {
         if( const AudioParameterFloat* param = dynamic_cast<AudioParameterFloat*>(params[i]) )
         {
-            Slider* slider;
-            
-            m_param_sliders.add( slider = new Slider (param->name) );
-            slider->setRange( param->range.start, param->range.end );
-            slider->setSliderStyle( Slider::RotaryHorizontalDrag );
-            slider->setValue( *param );
-            slider->setTextBoxStyle( Slider::NoTextBox, false, 0, 0 );
-            
-            slider->addListener( this );
-            addAndMakeVisible(slider );
-            
-            Label* label;
-            m_param_labels.add( label = new Label (param->name, param->name) );
-            label->setJustificationType( Justification::centred );
-            label->setFont( Font(LABEL_HEIGHT) );
-            addAndMakeVisible( label );
+            Slider* slider = new Slider( param->name );
+			slider->setRange( param->range.start, param->range.end );
+			slider->setSliderStyle( Slider::RotaryHorizontalDrag );
+			slider->setValue( *param );
+			slider->setTextBoxStyle( Slider::NoTextBox, false, 0, 0 );
+			
+			slider->addListener( this );
+			addAndMakeVisible(slider );
+			
+			Label* label = new Label( param->name, param->name );
+			label->setJustificationType( Justification::centred );
+			label->setFont( Font(LABEL_HEIGHT) );
+			addAndMakeVisible( label );
+			
+			if( param->paramID.contains( "head" ) )
+			{
+				m_head_dials.push_back( slider );
+				m_head_labels.push_back( label );
+			}
+			else
+			{
+				m_main_dials.push_back( slider );
+				m_main_labels.push_back( label );
+			}
+			
+			m_all_dials.add( slider );
+			m_all_labels.add( label );
         }
     }
-    
+	
     m_glitch_view           = make_unique<GLITCH_DELAY_VIEW>( effect.num_heads() );
     
-    m_num_dial_rows         = m_param_sliders.size() / DIAL_ROW_COUNT;
-    if( m_param_sliders.size() % DIAL_ROW_COUNT != 0 )
+    m_num_head_dial_rows    = static_cast<int>(m_head_dials.size()) / HEAD_DIAL_ROW_COUNT_MAX;
+    if( m_head_dials.size() % HEAD_DIAL_ROW_COUNT_MAX != 0 )
     {
-        ++m_num_dial_rows;
+        ++m_num_head_dial_rows;
     }
     
-    const float width       = ( BORDER * 2.0f ) + DIAL_SIZE_PRIMARY * DIAL_ROW_COUNT;
-    const float height      = ( BORDER * 2.0f ) + DIAL_SIZE_PRIMARY + ( DIAL_SIZE_SECONDARY * ( m_num_dial_rows - 1 ) ) + (DIAL_SEPARATION * m_num_dial_rows) + GLITCH_DELAY_HEIGHT;
+    const float width       = ( BORDER * 2.0f ) + DIAL_SIZE_PRIMARY * HEAD_DIAL_ROW_COUNT_MAX;
+    const float height      = ( BORDER * 2.0f ) + DIAL_SIZE_PRIMARY + ( DIAL_SIZE_SECONDARY * ( m_num_head_dial_rows ) ) + (DIAL_SEPARATION * ( m_num_head_dial_rows + 1 )) + GLITCH_DELAY_HEIGHT;
     setSize( width, height );
     
     // start the callback timer
@@ -163,7 +185,7 @@ GlitchDelayPluginAudioProcessorEditor::~GlitchDelayPluginAudioProcessorEditor()
 AudioParameterFloat* GlitchDelayPluginAudioProcessorEditor::get_parameter_for_slider( Slider* slider )
 {
     const OwnedArray<AudioProcessorParameter>& params = getAudioProcessor()->getParameters();
-    return dynamic_cast<AudioParameterFloat*> (params[ m_param_sliders.indexOf(slider) ]);
+    return dynamic_cast<AudioParameterFloat*> (params[ m_all_dials.indexOf(slider) ]);
 }
 
 //==============================================================================
@@ -180,33 +202,49 @@ void GlitchDelayPluginAudioProcessorEditor::paint (Graphics& g)
 
 void GlitchDelayPluginAudioProcessorEditor::resized()
 {
-    Rectangle<int> reduced = getLocalBounds().reduced( BORDER );
+	Rectangle<int> reduced = getLocalBounds().reduced( BORDER );
     
-    int dial = 0;
-    
-    for( int row = 0; row < m_num_dial_rows; ++row )
-    {
-		const int dial_size_for_row	= row == 0 ? DIAL_SIZE_PRIMARY : DIAL_SIZE_SECONDARY;
-
-		Rectangle<int> row_rect		= reduced.removeFromTop( dial_size_for_row );
-        
-        const int row_size			= min_val( DIAL_ROW_COUNT, m_param_sliders.size() - dial );
-        const int remainder			= ( DIAL_ROW_COUNT - row_size ) * dial_size_for_row;
-        row_rect.reduce( remainder / 2, 0 );
-        
-        for( int col = 0; col < row_size; ++col )
-        {
-            Rectangle<int> dial_bounds          = row_rect.removeFromLeft( dial_size_for_row );
-            const Rectangle<int> label_bounds   = dial_bounds.removeFromBottom( LABEL_HEIGHT );
-            
-            m_param_labels[dial]->setBounds( label_bounds );
-            m_param_sliders[dial]->setBounds( dial_bounds );
-            ++dial;
-        }
-        
-        // leave space between each row
-        reduced.removeFromTop( DIAL_SEPARATION );
-    }
+	auto add_dial = []( Rectangle<int>& row_rect, Slider& dial, int dial_size, Label& label, int label_size )
+	{
+		Rectangle<int> dial_bounds          = row_rect.removeFromLeft( dial_size );
+		const Rectangle<int> label_bounds   = dial_bounds.removeFromBottom( label_size );
+		
+		dial.setBounds( dial_bounds );
+		label.setBounds( label_bounds );
+	};
+	
+	// main row
+	Rectangle<int> main_row_rect		= reduced.removeFromTop( DIAL_SIZE_PRIMARY );
+	int unused_width					= main_row_rect.getWidth() - ( static_cast<int>( m_main_dials.size() ) * DIAL_SIZE_PRIMARY );
+	main_row_rect.reduce( unused_width / 2, 0 );
+	
+	
+	for( int col = 0; col < m_main_dials.size(); ++col  )
+	{
+		add_dial( main_row_rect, *m_main_dials[col], DIAL_SIZE_PRIMARY, *m_main_labels[col], LABEL_HEIGHT );
+	}
+	// leave space between each row
+	reduced.removeFromTop( DIAL_SEPARATION );
+	
+	// head rows
+	int dial( 0 );
+	for( int row = 0; row < m_num_head_dial_rows; ++row )
+	{
+		Rectangle<int> row_rect		= reduced.removeFromTop( DIAL_SIZE_SECONDARY );
+		
+		const int row_size			= min_val<int>( HEAD_DIAL_ROW_COUNT_MAX, static_cast<int>(m_head_dials.size()) - dial );
+		unused_width				= row_rect.getWidth() - ( row_size * DIAL_SIZE_SECONDARY );
+		row_rect.reduce( unused_width / 2, 0 );
+		
+		for( int col = 0; col < row_size; ++col )
+		{
+			add_dial( row_rect, *m_head_dials[dial], DIAL_SIZE_SECONDARY, *m_head_labels[dial], LABEL_HEIGHT );
+			++dial;
+		}
+		
+		// leave space between each row
+		reduced.removeFromTop( DIAL_SEPARATION );
+	}
     
     Rectangle<int> glitch_rect = reduced.removeFromTop( GLITCH_DELAY_HEIGHT );
     Point<int> glitch_top_left = glitch_rect.getTopLeft();
@@ -246,14 +284,15 @@ void GlitchDelayPluginAudioProcessorEditor::timerCallback()
     {
         if( const AudioParameterFloat* param = dynamic_cast<AudioParameterFloat*> (params[i]) )
         {
-            if( i < m_param_sliders.size() )
+            if( i < m_all_dials.size() )
             {
-                m_param_sliders[i]->setValue(*param);
+                m_all_dials[i]->setValue(*param);
             }
         }
     }
     
     m_glitch_view->update( m_effect );
-    
+	
+	// TODO only repaint the glitch vis (make it a component)
     repaint();
 }
