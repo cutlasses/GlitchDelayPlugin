@@ -89,7 +89,8 @@ private:
     static const int                                DIAL_SIZE_PRIMARY;
 	static const int                                DIAL_SIZE_SECONDARY;
     static const int                                DIAL_SEPARATION;
-    static const int                                LABEL_HEIGHT;
+	static const int                                HEAD_LABEL_HEIGHT;
+    static const int                                DIAL_LABEL_HEIGHT;
     static const int                                GLITCH_DELAY_HEIGHT;
     static const int                                BORDER;
 
@@ -101,13 +102,14 @@ private:
 	OwnedArray<Label>                               m_all_labels;
 	
 	std::vector<Slider*>                            m_main_dials;		// top row dials
-    std::vector<Label*>                             m_main_labels;
+    std::vector<Label*>                             m_main_dial_labels;
 	
+	OwnedArray<Label>								m_head_descr_labels;
 	std::vector<Slider*>                            m_head_dials;		// dials for the tape heads
-	std::vector<Label*>                             m_head_labels;
-	
+	std::vector<Label*>                             m_head_dial_labels;
 	
     int                                             m_num_head_dial_rows;
+	int												m_max_head_label_width;
     
     std::unique_ptr<GLITCH_DELAY_VIEW>              m_glitch_view;
     

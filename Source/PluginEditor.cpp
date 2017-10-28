@@ -106,9 +106,12 @@ const int GlitchDelayPluginAudioProcessorEditor::HEAD_DIAL_ROW_COUNT_MAX	= 3;
 const int GlitchDelayPluginAudioProcessorEditor::DIAL_SEPARATION       		= 30;
 const int GlitchDelayPluginAudioProcessorEditor::DIAL_SIZE_PRIMARY     		= 95;
 const int GlitchDelayPluginAudioProcessorEditor::DIAL_SIZE_SECONDARY   		= 75;
-const int GlitchDelayPluginAudioProcessorEditor::LABEL_HEIGHT          		= 10;
+const int GlitchDelayPluginAudioProcessorEditor::HEAD_LABEL_HEIGHT			= 14;
+const int GlitchDelayPluginAudioProcessorEditor::DIAL_LABEL_HEIGHT         	= 10;
 const int GlitchDelayPluginAudioProcessorEditor::GLITCH_DELAY_HEIGHT   		= 60;
 const int GlitchDelayPluginAudioProcessorEditor::BORDER                		= 40;
+
+const char* head_names[] = { "Low", "Normal", "High", "Reverse" };
 
 GlitchDelayPluginAudioProcessorEditor::GlitchDelayPluginAudioProcessorEditor (GlitchDelayPluginAudioProcessor& p, const GLITCH_DELAY_EFFECT& effect) :
     AudioProcessorEditor(&p),
@@ -119,10 +122,12 @@ GlitchDelayPluginAudioProcessorEditor::GlitchDelayPluginAudioProcessorEditor (Gl
 	m_all_dials(),
 	m_all_labels(),
     m_main_dials(),
-    m_main_labels(),
+    m_main_dial_labels(),
+	m_head_descr_labels(),
 	m_head_dials(),
-	m_head_labels(),
+	m_head_dial_labels(),
     m_num_head_dial_rows(0),
+	m_max_head_label_width(0),
     m_glitch_view(nullptr)
 {
     const OwnedArray<AudioProcessorParameter>& params = p.getParameters();
@@ -142,18 +147,18 @@ GlitchDelayPluginAudioProcessorEditor::GlitchDelayPluginAudioProcessorEditor (Gl
 			
 			Label* label = new Label( param->name, param->name );
 			label->setJustificationType( Justification::centred );
-			label->setFont( Font(LABEL_HEIGHT) );
+			label->setFont( Font(DIAL_LABEL_HEIGHT) );
 			addAndMakeVisible( label );
 			
 			if( param->paramID.contains( "head" ) )
 			{
 				m_head_dials.push_back( slider );
-				m_head_labels.push_back( label );
+				m_head_dial_labels.push_back( label );
 			}
 			else
 			{
 				m_main_dials.push_back( slider );
-				m_main_labels.push_back( label );
+				m_main_dial_labels.push_back( label );
 			}
 			
 			m_all_dials.add( slider );
@@ -161,16 +166,30 @@ GlitchDelayPluginAudioProcessorEditor::GlitchDelayPluginAudioProcessorEditor (Gl
         }
     }
 	
-    m_glitch_view           = make_unique<GLITCH_DELAY_VIEW>( effect.num_heads() );
+	for( int n = 0; n < effect.num_heads() - 1; ++n )
+	{
+		const char* head_name	= head_names[n];
+		Label* descr_label		= new Label( head_name, head_name );
+		descr_label->setJustificationType( Justification::right );
+		descr_label->setFont( Font(HEAD_LABEL_HEIGHT) );
+		addAndMakeVisible( descr_label );
+		
+		int border				= descr_label->getBorderSize().getLeftAndRight();
+		m_max_head_label_width	= max_val( m_max_head_label_width, descr_label->getFont().getStringWidth( head_name ) + border );
+		
+		m_head_descr_labels.add( descr_label );
+	}
+	
+    m_glitch_view           	= make_unique<GLITCH_DELAY_VIEW>( effect.num_heads() );
     
-    m_num_head_dial_rows    = static_cast<int>(m_head_dials.size()) / HEAD_DIAL_ROW_COUNT_MAX;
+    m_num_head_dial_rows    	= static_cast<int>(m_head_dials.size()) / HEAD_DIAL_ROW_COUNT_MAX;
     if( m_head_dials.size() % HEAD_DIAL_ROW_COUNT_MAX != 0 )
     {
         ++m_num_head_dial_rows;
     }
     
-    const float width       = ( BORDER * 2.0f ) + DIAL_SIZE_PRIMARY * HEAD_DIAL_ROW_COUNT_MAX;
-    const float height      = ( BORDER * 2.0f ) + DIAL_SIZE_PRIMARY + ( DIAL_SIZE_SECONDARY * ( m_num_head_dial_rows ) ) + (DIAL_SEPARATION * ( m_num_head_dial_rows + 1 )) + GLITCH_DELAY_HEIGHT;
+    const float width       	= ( BORDER * 2.0f ) + m_max_head_label_width + (DIAL_SIZE_PRIMARY * HEAD_DIAL_ROW_COUNT_MAX);
+    const float height      	= ( BORDER * 2.0f ) + DIAL_SIZE_PRIMARY + ( DIAL_SIZE_SECONDARY * ( m_num_head_dial_rows ) ) + (DIAL_SEPARATION * ( m_num_head_dial_rows + 1 )) + GLITCH_DELAY_HEIGHT;
     setSize( width, height );
     
     // start the callback timer
@@ -221,7 +240,7 @@ void GlitchDelayPluginAudioProcessorEditor::resized()
 	
 	for( int col = 0; col < m_main_dials.size(); ++col  )
 	{
-		add_dial( main_row_rect, *m_main_dials[col], DIAL_SIZE_PRIMARY, *m_main_labels[col], LABEL_HEIGHT );
+		add_dial( main_row_rect, *m_main_dials[col], DIAL_SIZE_PRIMARY, *m_main_dial_labels[col], DIAL_LABEL_HEIGHT );
 	}
 	// leave space between each row
 	reduced.removeFromTop( DIAL_SEPARATION );
@@ -230,15 +249,16 @@ void GlitchDelayPluginAudioProcessorEditor::resized()
 	int dial( 0 );
 	for( int row = 0; row < m_num_head_dial_rows; ++row )
 	{
-		Rectangle<int> row_rect		= reduced.removeFromTop( DIAL_SIZE_SECONDARY );
+		Rectangle<int> row_rect			= reduced.removeFromTop( DIAL_SIZE_SECONDARY );
 		
-		const int row_size			= min_val<int>( HEAD_DIAL_ROW_COUNT_MAX, static_cast<int>(m_head_dials.size()) - dial );
-		unused_width				= row_rect.getWidth() - ( row_size * DIAL_SIZE_SECONDARY );
-		row_rect.reduce( unused_width / 2, 0 );
+		Rectangle<int> head_label_rect	= row_rect.removeFromLeft( m_max_head_label_width );
+		m_head_descr_labels[row]->setBounds( head_label_rect );
+		
+		const int row_size				= min_val<int>( HEAD_DIAL_ROW_COUNT_MAX, static_cast<int>(m_head_dials.size()) - dial );
 		
 		for( int col = 0; col < row_size; ++col )
 		{
-			add_dial( row_rect, *m_head_dials[dial], DIAL_SIZE_SECONDARY, *m_head_labels[dial], LABEL_HEIGHT );
+			add_dial( row_rect, *m_head_dials[dial], DIAL_SIZE_SECONDARY, *m_head_dial_labels[dial], DIAL_LABEL_HEIGHT );
 			++dial;
 		}
 		

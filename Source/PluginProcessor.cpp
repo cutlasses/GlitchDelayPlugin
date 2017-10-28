@@ -103,61 +103,61 @@ GlitchDelayPluginAudioProcessor::GlitchDelayPluginAudioProcessor()
 													   				0.5f ) );       		// default value
 	
 	addParameter( m_low_head_mix = new AudioParameterFloat(			"low_head_mix",    		// parameterID
-																	"Low Head Mix",    		// parameter name
+																	"Mix",    				// parameter name
 																	0.0f,           		// minimum value
 																	1.0f,           		// maximum value
 																	0.5f ) );       		// default value
 	
 	addParameter( m_low_head_size = new AudioParameterFloat(		"low_head_size",    	// parameterID
-																   	"Low Head Size",    	// parameter name
+																   	"Size",    				// parameter name
 																   	0.0f,           		// minimum value
 																   	1.0f,           		// maximum value
 																   	0.5f ) );       		// default value
 	
 	addParameter( m_low_head_jitter = new AudioParameterFloat(		"low_head_jitter",    	// parameterID
-																	"Low Head Jitter",    	// parameter name
+																	"Jitter",    			// parameter name
 																	0.0f,           		// minimum value
 																	1.0f,           		// maximum value
 																	0.5f ) );       		// default value
 
 	addParameter( m_normal_head_mix = new AudioParameterFloat(		"normal_head_mix",    	// parameterID
-																	"Normal Head Mix",    	// parameter name
+																	"Mix",    				// parameter name
 																	0.0f,           		// minimum value
 																	1.0f,           		// maximum value
 																	0.5f ) );       		// default value
 	
 	addParameter( m_normal_head_size = new AudioParameterFloat(		"normal_head_size",    	// parameterID
-																	"Normal Head Size",    	// parameter name
+																	"Size",  			  	// parameter name
 																	0.0f,           		// minimum value
 																	1.0f,           		// maximum value
 																	0.5f ) );       		// default value
 	
 	addParameter( m_normal_head_jitter = new AudioParameterFloat(	"normal_head_jitter",	// parameterID
-																	"Normal Head Jitter",	// parameter name
+																	"Jitter",				// parameter name
 																	0.0f,           		// minimum value
 																	1.0f,           		// maximum value
 																	0.5f ) );       		// default value
 	
 	addParameter( m_high_head_mix = new AudioParameterFloat(		"high_head_mix",    	// parameterID
-																	"High Head Mix",    	// parameter name
+																	"Mix",    				// parameter name
 																	0.0f,           		// minimum value
 																	1.0f,           		// maximum value
 																	0.5f ) );       		// default value
 	
 	addParameter( m_high_head_size = new AudioParameterFloat(		"high_head_size",    	// parameterID
-															   		"High Head Size",    	// parameter name
+															   		"Size",    				// parameter name
 															   		0.0f,           		// minimum value
 																	1.0f,           		// maximum value
 															   		0.5f ) );       		// default value
 	
 	addParameter( m_high_head_jitter = new AudioParameterFloat(		"high_head_jitter",		// parameterID
-																	"High Head Jitter",		// parameter name
+																	"Jitter",				// parameter name
 																	0.0f,           		// minimum value
 																	1.0f,           		// maximum value
 																	0.5f ) );       		// default value
 	
 	addParameter( m_reverse_head_mix = new AudioParameterFloat(		"reverse_head_mix",		// parameterID
-															   		"Reverse Head Mix",		// parameter name
+															   		"Mix",					// parameter name
 															   		0.0f,           		// minimum value
 															   		1.0f,           		// maximum value
 															   		0.5f ) );       		// default value
@@ -299,7 +299,7 @@ void GlitchDelayPluginAudioProcessor::processBlock (AudioSampleBuffer& buffer, M
 	m_effect->post_process_audio( output );
 	
 	// mix down effect output to 1 channel
-	std::array<float, 4> mix_weights = { *m_low_head_mix, *m_normal_head_mix, *m_high_head_mix, *m_reverse_head_mix };
+	std::array<float, 4> mix_weights = { (*m_low_head_mix) * 0.25f, (*m_normal_head_mix) * 0.25f, (*m_high_head_mix) * 0.25f, (*m_reverse_head_mix) * 0.25f };
 	mix_down( output, mix_weights );
 	
 	// mix output with original input
