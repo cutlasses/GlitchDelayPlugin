@@ -70,6 +70,8 @@ private:
     AudioParameterFloat*                                        m_mix;
     AudioParameterFloat*                                        m_feedback;
 	
+	AudioParameterBool*											m_freeze_active;
+	
 	AudioParameterFloat*                                        m_low_head_mix;
     AudioParameterFloat*                                        m_low_head_size;
 	AudioParameterFloat*                                        m_low_head_jitter;

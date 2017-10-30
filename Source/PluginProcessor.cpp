@@ -75,6 +75,7 @@ GlitchDelayPluginAudioProcessor::GlitchDelayPluginAudioProcessor()
                        ),
 	m_mix( nullptr ),
 	m_feedback( nullptr ),
+	m_freeze_active( nullptr ),
 	m_low_head_mix( nullptr ),
 	m_low_head_size( nullptr ),
 	m_low_head_jitter( nullptr ),
@@ -101,6 +102,10 @@ GlitchDelayPluginAudioProcessor::GlitchDelayPluginAudioProcessor()
 																	0.0f,           		// minimum value
 																	MAX_FEEDBACK,   		// maximum value
 													   				0.5f ) );       		// default value
+	
+	addParameter( m_freeze_active = new AudioParameterBool(			"freeze",     			// parameterID
+													   				"Freeze",     			// parameter name
+													   				false ) );       		// default value
 	
 	addParameter( m_low_head_mix = new AudioParameterFloat(			"low_head_mix",    		// parameterID
 																	"Mix",    				// parameter name
@@ -291,6 +296,7 @@ void GlitchDelayPluginAudioProcessor::processBlock (AudioSampleBuffer& buffer, M
 	m_effect->set_loop_size( HIGH_HEAD, *m_high_head_size );
 	m_effect->set_jitter( HIGH_HEAD, *m_high_head_jitter );
 	
+	m_effect->set_freeze_active( *m_freeze_active );
 	
 	m_effect->set_loop_moving(false);
 	m_effect->update();

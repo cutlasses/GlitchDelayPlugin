@@ -85,6 +85,12 @@ class DELAY_BUFFER
 	
 	int                         m_fade_samples_remaining;
 	
+	bool						m_freeze_active;
+	
+	/////////
+	void                        fade_in_write();
+
+	
 public:
 	
 	DELAY_BUFFER();
@@ -107,9 +113,8 @@ public:
 	
 	void                        set_bit_depth( int sample_size_in_bits );
 	
-	void                        fade_in_write();
-	
-	void                        set_write_head( int new_head );
+	bool						freeze_active() const;
+	void						set_freeze( bool freeze );
 	
 #ifdef DEBUG_OUTPUT
 	void                        debug_output();
@@ -135,6 +140,7 @@ class GLITCH_DELAY_EFFECT : public TEENSY_AUDIO_STREAM_WRAPPER
 	int                   	m_next_sample_size_in_bits;
 	bool                  	m_next_loop_moving;
 	bool                  	m_next_beat;
+	bool					m_next_freeze_active;
 	
 protected:
 	
@@ -157,6 +163,8 @@ public:
 	void                  	set_jitter( int play_head, float jitter );
 	
 	void                  	set_beat();
+	
+	void					set_freeze_active( bool active );
 	
 	// for plugin display only
 	int                   	num_heads() const;

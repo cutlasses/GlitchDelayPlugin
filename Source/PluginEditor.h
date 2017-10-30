@@ -63,6 +63,7 @@ public:
 
 class GlitchDelayPluginAudioProcessorEditor  :  public AudioProcessorEditor,
                                                 public Slider::Listener,
+												public ToggleButton::Listener,
                                                 private Timer
 {
 public:
@@ -80,6 +81,10 @@ public:
     void sliderDragStarted (Slider* slider) override;
     void sliderDragEnded (Slider* slider) override;
     /////////////////////////
+	
+	//// ToggleButton::Listener ////
+	void buttonClicked (Button*) override;
+	/////////////////////////
 
 private:
     // This reference is provided as a quick way for your editor to
@@ -88,6 +93,7 @@ private:
     static const int                                HEAD_DIAL_ROW_COUNT_MAX;
     static const int                                DIAL_SIZE_PRIMARY;
 	static const int                                DIAL_SIZE_SECONDARY;
+	static const int								BUTTON_SIZE;
     static const int                                DIAL_SEPARATION;
 	static const int                                HEAD_LABEL_HEIGHT;
     static const int                                DIAL_LABEL_HEIGHT;
@@ -108,8 +114,15 @@ private:
 	std::vector<Slider*>                            m_head_dials;		// dials for the tape heads
 	std::vector<Label*>                             m_head_dial_labels;
 	
+	ScopedPointer<ToggleButton>						m_freeze_button;
+	
+	std::vector<AudioParameterFloat*>				m_all_float_parameters;
+	std::vector<AudioParameterBool*>				m_all_bool_parameters;
+	
     int                                             m_num_head_dial_rows;
 	int												m_max_head_label_width;
+	int												m_primary_row_width;
+	int												m_secondary_row_width;
     
     std::unique_ptr<GLITCH_DELAY_VIEW>              m_glitch_view;
     

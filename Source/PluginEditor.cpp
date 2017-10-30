@@ -106,6 +106,7 @@ const int GlitchDelayPluginAudioProcessorEditor::HEAD_DIAL_ROW_COUNT_MAX	= 3;
 const int GlitchDelayPluginAudioProcessorEditor::DIAL_SEPARATION       		= 30;
 const int GlitchDelayPluginAudioProcessorEditor::DIAL_SIZE_PRIMARY     		= 95;
 const int GlitchDelayPluginAudioProcessorEditor::DIAL_SIZE_SECONDARY   		= 75;
+const int GlitchDelayPluginAudioProcessorEditor::BUTTON_SIZE				= 70;
 const int GlitchDelayPluginAudioProcessorEditor::HEAD_LABEL_HEIGHT			= 14;
 const int GlitchDelayPluginAudioProcessorEditor::DIAL_LABEL_HEIGHT         	= 10;
 const int GlitchDelayPluginAudioProcessorEditor::GLITCH_DELAY_HEIGHT   		= 60;
@@ -116,6 +117,7 @@ const char* head_names[] = { "Low", "Normal", "High", "Reverse" };
 GlitchDelayPluginAudioProcessorEditor::GlitchDelayPluginAudioProcessorEditor (GlitchDelayPluginAudioProcessor& p, const GLITCH_DELAY_EFFECT& effect) :
     AudioProcessorEditor(&p),
     Slider::Listener(),
+	ToggleButton::Listener(),
     Timer(),
     m_processor(p),
     m_effect(effect),
@@ -126,15 +128,20 @@ GlitchDelayPluginAudioProcessorEditor::GlitchDelayPluginAudioProcessorEditor (Gl
 	m_head_descr_labels(),
 	m_head_dials(),
 	m_head_dial_labels(),
+	m_freeze_button(nullptr),
+	m_all_float_parameters(),
+	m_all_bool_parameters(),
     m_num_head_dial_rows(0),
 	m_max_head_label_width(0),
+	m_primary_row_width(0),
+	m_secondary_row_width(0),
     m_glitch_view(nullptr)
 {
     const OwnedArray<AudioProcessorParameter>& params = p.getParameters();
     
     for( int i = 0; i < params.size(); ++i )
     {
-        if( const AudioParameterFloat* param = dynamic_cast<AudioParameterFloat*>(params[i]) )
+        if( AudioParameterFloat* param = dynamic_cast<AudioParameterFloat*>(params[i]) )
         {
             Slider* slider = new Slider( param->name );
 			slider->setRange( param->range.start, param->range.end );
@@ -163,7 +170,20 @@ GlitchDelayPluginAudioProcessorEditor::GlitchDelayPluginAudioProcessorEditor (Gl
 			
 			m_all_dials.add( slider );
 			m_all_labels.add( label );
+			
+			m_all_float_parameters.push_back( param );
         }
+		else if( AudioParameterBool* param = dynamic_cast<AudioParameterBool*>(params[i]) )
+		{
+			ASSERT_MSG( m_freeze_button == nullptr, "More than one bool parameter?" );
+			
+			m_freeze_button = new ToggleButton( param->name );
+			m_freeze_button->addListener( this );
+			addAndMakeVisible( m_freeze_button );
+			//m_freeze_button->changeWidthToFitText();
+			
+			m_all_bool_parameters.push_back( param );
+		}
     }
 	
 	for( int n = 0; n < effect.num_heads() - 1; ++n )
@@ -187,9 +207,11 @@ GlitchDelayPluginAudioProcessorEditor::GlitchDelayPluginAudioProcessorEditor (Gl
     {
         ++m_num_head_dial_rows;
     }
-    
-    const float width       	= ( BORDER * 2.0f ) + m_max_head_label_width + (DIAL_SIZE_PRIMARY * HEAD_DIAL_ROW_COUNT_MAX);
-    const float height      	= ( BORDER * 2.0f ) + DIAL_SIZE_PRIMARY + ( DIAL_SIZE_SECONDARY * ( m_num_head_dial_rows ) ) + (DIAL_SEPARATION * ( m_num_head_dial_rows + 1 )) + GLITCH_DELAY_HEIGHT;
+	
+	m_primary_row_width 		= ( static_cast<int>(m_main_dials.size()) * DIAL_SIZE_PRIMARY ) + BUTTON_SIZE/*m_freeze_button->getWidth()*/;
+	m_secondary_row_width		= m_max_head_label_width + ( DIAL_SIZE_PRIMARY * HEAD_DIAL_ROW_COUNT_MAX );
+    const int width      		= ( BORDER * 2.0f ) + max_val( m_primary_row_width, m_secondary_row_width );
+    const int height      		= ( BORDER * 2.0f ) + DIAL_SIZE_PRIMARY + ( DIAL_SIZE_SECONDARY * ( m_num_head_dial_rows ) ) + (DIAL_SEPARATION * ( m_num_head_dial_rows + 1 )) + GLITCH_DELAY_HEIGHT;
     setSize( width, height );
     
     // start the callback timer
@@ -203,8 +225,7 @@ GlitchDelayPluginAudioProcessorEditor::~GlitchDelayPluginAudioProcessorEditor()
 
 AudioParameterFloat* GlitchDelayPluginAudioProcessorEditor::get_parameter_for_slider( Slider* slider )
 {
-    const OwnedArray<AudioProcessorParameter>& params = getAudioProcessor()->getParameters();
-    return dynamic_cast<AudioParameterFloat*> (params[ m_all_dials.indexOf(slider) ]);
+    return m_all_float_parameters[ m_all_dials.indexOf(slider) ];
 }
 
 //==============================================================================
@@ -234,7 +255,7 @@ void GlitchDelayPluginAudioProcessorEditor::resized()
 	
 	// main row
 	Rectangle<int> main_row_rect		= reduced.removeFromTop( DIAL_SIZE_PRIMARY );
-	int unused_width					= main_row_rect.getWidth() - ( static_cast<int>( m_main_dials.size() ) * DIAL_SIZE_PRIMARY );
+	int unused_width					= main_row_rect.getWidth() - m_primary_row_width;
 	main_row_rect.reduce( unused_width / 2, 0 );
 	
 	
@@ -242,6 +263,8 @@ void GlitchDelayPluginAudioProcessorEditor::resized()
 	{
 		add_dial( main_row_rect, *m_main_dials[col], DIAL_SIZE_PRIMARY, *m_main_dial_labels[col], DIAL_LABEL_HEIGHT );
 	}
+	//ASSERT_MSG( m_freeze_button->getWidth() == main_row_rect.getWidth(), "Invalid row width remaining" );
+	m_freeze_button->setBounds( main_row_rect );
 	// leave space between each row
 	reduced.removeFromTop( DIAL_SEPARATION );
 	
@@ -296,8 +319,19 @@ void GlitchDelayPluginAudioProcessorEditor::sliderDragEnded (Slider* slider)
     }
 }
 
+void GlitchDelayPluginAudioProcessorEditor::buttonClicked( Button* button )
+{
+	// currently only one button
+	ASSERT_MSG( button == m_freeze_button, "What button is this?" );
+	
+	AudioParameterBool* param = m_all_bool_parameters.front();
+	
+	*param = !param->get();
+}
+
 void GlitchDelayPluginAudioProcessorEditor::timerCallback()
 {
+	/*
     const OwnedArray<AudioProcessorParameter>& params = getAudioProcessor()->getParameters();
     
     for( int i = 0; i < params.size(); ++i )
@@ -310,6 +344,7 @@ void GlitchDelayPluginAudioProcessorEditor::timerCallback()
             }
         }
     }
+	 */
     
     m_glitch_view->update( m_effect );
 	

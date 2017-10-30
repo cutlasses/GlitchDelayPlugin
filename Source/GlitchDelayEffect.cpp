@@ -499,7 +499,8 @@ DELAY_BUFFER::DELAY_BUFFER() :
     m_buffer_size_in_samples(0),
     m_sample_size_in_bits(0),
     m_write_head(0),
-    m_fade_samples_remaining(0)
+    m_fade_samples_remaining(0),
+	m_freeze_active(false)
 {
     set_bit_depth( 16 );
 }
@@ -610,7 +611,7 @@ void DELAY_BUFFER::write_sample( int16_t sample, int index )
 int16_t DELAY_BUFFER::read_sample( int index ) const
 {
     ASSERT_MSG( index >= 0 && index < m_buffer_size_in_samples, "DELAY_BUFFER::read_sample() writing outside buffer" );
-    ASSERT_MSG( index != m_write_head, "Reading from the write head position, expect a glitch" );
+    //ASSERT_MSG( index != m_write_head, "Reading from the write head position, expect a glitch" );
     
     switch( m_sample_size_in_bits )
     {
@@ -719,7 +720,12 @@ void DELAY_BUFFER::increment_head( float& head, float speed ) const
 void DELAY_BUFFER::write_to_buffer( const int16_t* source, int size )
 {
     ASSERT_MSG( m_write_head >= 0 && m_write_head < m_buffer_size_in_samples, "GLITCH_DELAY_EFFECT::write_to_buffer()" );
-    
+	
+	if( m_freeze_active )
+	{
+		return;
+	}
+	
     for( int x = 0; x < size; ++x )
     {
         // fading in the write head
@@ -759,15 +765,33 @@ void DELAY_BUFFER::set_bit_depth( int sample_size_in_bits )
     }
 }
 
+bool DELAY_BUFFER::freeze_active() const
+{
+	return m_freeze_active;
+}
+
+void DELAY_BUFFER::set_freeze( bool freeze )
+{
+	if( m_freeze_active != freeze && m_fade_samples_remaining == 0 )
+	{
+		if( m_freeze_active )
+		{
+			// starting to write again, so fade in the new audio over the old
+			fade_in_write();
+			
+			m_freeze_active = false;
+		}
+		else
+		{
+			m_freeze_active = true;
+		}
+	}
+}
+
 void DELAY_BUFFER::fade_in_write()
 {
     ASSERT_MSG( m_fade_samples_remaining == 0, "DELAY_BUFFER::fade_in_write() trying to start a fade during a fade" );
     m_fade_samples_remaining = FIXED_FADE_TIME_SAMPLES;
-}
-
-void DELAY_BUFFER::set_write_head( int new_write_head )
-{
-    m_write_head = new_write_head;
 }
 
 #ifdef DEBUG_OUTPUT
@@ -793,7 +817,8 @@ GLITCH_DELAY_EFFECT::GLITCH_DELAY_EFFECT() :
     m_loop_moving(true),
     m_next_sample_size_in_bits(12),
     m_next_loop_moving(true),
-    m_next_beat(false)
+    m_next_beat(false),
+	m_next_freeze_active(false)
 {
 	for( int i = 0; i < NUM_PLAY_HEADS; ++ i )
 	{
@@ -805,7 +830,7 @@ GLITCH_DELAY_EFFECT::GLITCH_DELAY_EFFECT() :
 void GLITCH_DELAY_EFFECT::process_audio_in_impl( int channel, const int16_t* sample_data, int num_samples )
 {
     ASSERT_MSG( channel == 0, "Only mono input supported" );
-    
+	
     m_delay_buffer.write_to_buffer( sample_data, num_samples );
 }
 
@@ -832,6 +857,8 @@ void GLITCH_DELAY_EFFECT::update()
     ++num_updates;
     
     m_delay_buffer.set_bit_depth( m_next_sample_size_in_bits );
+	m_delay_buffer.set_freeze( m_next_freeze_active );
+	
     m_loop_moving               = m_next_loop_moving;
     
     for( int pi = 0; pi < NUM_PLAY_HEADS; ++pi )
@@ -879,7 +906,7 @@ void GLITCH_DELAY_EFFECT::update()
     // read in on channel 0
     process_audio_in( 0 );
     
-    // write out all the playheads TODO this uses more output than there are channels!!
+    // write out all the playheads
     for( int pi = 0; pi < NUM_PLAY_HEADS; ++pi )
     {
         process_audio_out( pi );
@@ -912,6 +939,11 @@ void GLITCH_DELAY_EFFECT::set_jitter( int play_head, float jitter )
 void GLITCH_DELAY_EFFECT::set_beat()
 {
     m_next_beat = true;
+}
+
+void GLITCH_DELAY_EFFECT::set_freeze_active( bool active )
+{
+	m_next_freeze_active = active;
 }
 
 int GLITCH_DELAY_EFFECT::num_heads() const
