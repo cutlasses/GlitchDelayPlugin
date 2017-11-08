@@ -10,4 +10,7 @@ These heads loop small sections of audio. There are 3 of these. One that plays t
 **Reverse head** 
 This head plays the buffer in reverese at the original octave.
 
+![alt text](https://user-images.githubusercontent.com/18176564/32569049-e84dc710-c4b7-11e7-9e0f-059c36c37f17.png "Plugin on MacOs")
+
+
 
