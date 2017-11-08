@@ -7,5 +7,7 @@ The effect consists of a standard delay line, or delay buffer, with multiple rea
 **Loop heads**
 These heads loop small sections of audio. There are 3 of these. One that plays the audio an octave lower, one at the original octave, and one an octave higher. The size of each of these loops can be adjusted (size dial), as can the amount the loops move each time they loop (jitter dial)
 
-**Reverse head**
+**Reverse head** 
 This head plays the buffer in reverese at the original octave.
+
+
