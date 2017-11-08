@@ -1,8 +1,8 @@
 #pragma once
 
-#define DEBUG_OUTPUT
+//#define DEBUG_OUTPUT
 //#define STANDALONE_AUDIO
-#define PERF_CHECK
+//#define PERF_CHECK
 //#define SET_TEMPO
 
 //#define TARGET_TEENSY

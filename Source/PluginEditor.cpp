@@ -112,7 +112,7 @@ const int GlitchDelayPluginAudioProcessorEditor::DIAL_LABEL_HEIGHT         	= 10
 const int GlitchDelayPluginAudioProcessorEditor::GLITCH_DELAY_HEIGHT   		= 60;
 const int GlitchDelayPluginAudioProcessorEditor::BORDER                		= 40;
 
-const char* head_names[] = { "Low", "Normal", "High", "Reverse" };
+const char* head_names[] = { "-1 Oct.", "+0 Oct.", "+1 Oct.", "Reverse" };
 
 GlitchDelayPluginAudioProcessorEditor::GlitchDelayPluginAudioProcessorEditor (GlitchDelayPluginAudioProcessor& p, const GLITCH_DELAY_EFFECT& effect) :
     AudioProcessorEditor(&p),
