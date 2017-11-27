@@ -89,7 +89,7 @@ GlitchDelayPluginAudioProcessor::GlitchDelayPluginAudioProcessor()
 #endif
 {
     // create the wrapped effect
-    m_effect = make_unique< GLITCH_DELAY_EFFECT >();
+	m_effect = std::make_unique< GLITCH_DELAY_EFFECT >();
     
     addParameter( m_mix = new AudioParameterFloat(					"mix",          		// parameterID
 																	"Mix",          		// parameter name

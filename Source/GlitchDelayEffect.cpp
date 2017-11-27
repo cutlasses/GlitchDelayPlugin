@@ -7,7 +7,7 @@
 #endif // TARGET_TEENSY
 
 #include <string.h>
-#include <Math.h>
+#include <math.h>
 #include "GlitchDelayEffect.h"
 #include "CompileSwitches.h"
 

@@ -145,7 +145,7 @@ GlitchDelayPluginAudioProcessorEditor::GlitchDelayPluginAudioProcessorEditor (Gl
         {
             Slider* slider = new Slider( param->name );
 			slider->setRange( param->range.start, param->range.end );
-			slider->setSliderStyle( Slider::RotaryHorizontalDrag );
+			slider->setSliderStyle( Slider::RotaryHorizontalVerticalDrag );
 			slider->setValue( *param );
 			slider->setTextBoxStyle( Slider::NoTextBox, false, 0, 0 );
 			
@@ -200,7 +200,7 @@ GlitchDelayPluginAudioProcessorEditor::GlitchDelayPluginAudioProcessorEditor (Gl
 		m_head_descr_labels.add( descr_label );
 	}
 	
-    m_glitch_view           	= make_unique<GLITCH_DELAY_VIEW>( effect.num_heads() );
+	m_glitch_view           	= std::make_unique<GLITCH_DELAY_VIEW>( effect.num_heads() );
     
     m_num_head_dial_rows    	= static_cast<int>(m_head_dials.size()) / HEAD_DIAL_ROW_COUNT_MAX;
     if( m_head_dials.size() % HEAD_DIAL_ROW_COUNT_MAX != 0 )

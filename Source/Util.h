@@ -181,11 +181,4 @@ inline int random( int max )
 
 /////////////////////////////////////////////////////
 
-// no c++14 on xcode 7
-template<typename T, typename... Args>
-std::unique_ptr<T> make_unique(Args&&... args)
-{
-    return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
-}
-
 #endif
