@@ -1,18 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <JUCERPROJECT id="lPKY3u" name="GlitchDelayPlugin" displaySplashScreen="1"
-              reportAppUsage="1" splashScreenColour="Dark" projectType="audioplug"
-              version="1.0.0" bundleIdentifier="com.yourcompany.GlitchDelayPlugin"
+              reportAppUsage="1" splashScreenColour="Light" projectType="audioplug"
+              version="1.0.1" bundleIdentifier="com.yourcompany.GlitchDelayPlugin"
               includeBinaryInAppConfig="1" cppLanguageStandard="latest" buildVST="1"
               buildVST3="0" buildAU="1" buildAUv3="0" buildRTAS="0" buildAAX="0"
-              buildStandalone="1" enableIAA="0" pluginName="GlitchDelayPlugin"
-              pluginDesc="GlitchDelayPlugin" pluginManufacturer="yourcompany"
+              buildStandalone="1" enableIAA="0" pluginName="GlitchDelayPluginv11"
+              pluginDesc="GlitchDelayPluginv11" pluginManufacturer="Cutlasses"
               pluginManufacturerCode="Manu" pluginCode="Lpky" pluginChannelConfigs=""
               pluginIsSynth="0" pluginWantsMidiIn="0" pluginProducesMidiOut="0"
               pluginIsMidiEffectPlugin="0" pluginEditorRequiresKeys="0" pluginAUExportPrefix="GlitchDelayPluginAU"
-              pluginRTASCategory="" aaxIdentifier="com.yourcompany.GlitchDelayPlugin"
+              pluginRTASCategory="" aaxIdentifier="com.cutlasses.GlitchDelayPlugin"
               pluginAAXCategory="AAX_ePlugInCategory_Dynamics" jucerVersion="5.2.0"
-              companyCopyright="">
+              companyCopyright="" companyName="Cutlasses" companyWebsite="www.cutlasses.co.uk">
   <MAINGROUP id="xeI5xd" name="GlitchDelayPlugin">
     <GROUP id="{F9538C06-630A-67D3-659E-080AF5B69096}" name="Source">
       <FILE id="mopxls" name="CompileSwitches.h" compile="0" resource="0"

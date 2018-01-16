@@ -104,7 +104,7 @@ GlitchDelayPluginAudioProcessor::GlitchDelayPluginAudioProcessor()
 													   				0.5f ) );       		// default value
 	
 	addParameter( m_freeze_active = new AudioParameterBool(			"freeze",     			// parameterID
-													   				"Freeze",     			// parameter name
+													   				"Freeze!",     			// parameter name
 													   				false ) );       		// default value
 	
 	addParameter( m_low_head_mix = new AudioParameterFloat(			"low_head_mix",    		// parameterID
@@ -275,6 +275,21 @@ void GlitchDelayPluginAudioProcessor::processBlock (AudioSampleBuffer& buffer, M
 {
 	ScopedNoDenormals no_denormals;
 	
+	bool stereo(false);
+	if( buffer.getNumChannels() > 1 )
+	{
+		jassert( buffer.getNumChannels() == 2 );
+		
+		stereo = true;
+	}
+	
+	if( stereo )
+	{
+		// mix the 2 channels down into one
+		constexpr std::array<float, 2> stereo_weights = { 0.5f, 0.5f };
+		mix_down( buffer, stereo_weights );
+	}
+	
 	if( m_prev_buffer.getNumChannels() != 1 || m_prev_buffer.getNumSamples() != buffer.getNumSamples() )
 	{
 		// set size of prev_buffer if not correct dimensions
@@ -313,6 +328,11 @@ void GlitchDelayPluginAudioProcessor::processBlock (AudioSampleBuffer& buffer, M
 	
 	// copy our mixed output to channel 0 of buffer
 	buffer.copyFrom( 0, 0, output, 0, 0, output.getNumSamples() );
+	
+	if( stereo )
+	{
+		buffer.copyFrom( 1, 0, output, 0, 0, output.getNumSamples() );
+	}
 	
 	// setup feedback for next block
 	m_prev_buffer.copyFrom( 0, 0, output, 0, 0, output.getNumSamples() );
