@@ -16,8 +16,8 @@ const float MIN_SPEED( 0.25f );
 const float MAX_SPEED( 4.0f );
 
 #ifdef TARGET_JUCE
-const int AUDIO_BLOCK_SAMPLES( 512 );           // TODO need a value in JUCE, is it even constant?
-const int AUDIO_SAMPLE_RATE( 44100 );           // TODO need a value in JUCE
+int AUDIO_BLOCK_SAMPLES( 512 );           // TODO need a value in JUCE, is it even constant?
+int AUDIO_SAMPLE_RATE( 44100 );           // TODO need a value in JUCE
 #endif
 
 const int FIXED_FADE_TIME_SAMPLES( (AUDIO_SAMPLE_RATE / 1000.0f ) * 4 ); // 4ms cross fade

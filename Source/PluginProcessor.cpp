@@ -285,8 +285,10 @@ void GlitchDelayPluginAudioProcessor::processBlock (AudioSampleBuffer& buffer, M
 {
 	ScopedNoDenormals no_denormals;
 	
-	m_current_sample_rate = getSampleRate();
-	m_current_block_size = getBlockSize();
+	m_current_sample_rate	= getSampleRate();
+	m_current_block_size	= getBlockSize();
+	AUDIO_BLOCK_SAMPLES		= m_current_block_size;
+	AUDIO_SAMPLE_RATE		= trunc_to_int( m_current_sample_rate );
 	
 	bool stereo(false);
 	if( buffer.getNumChannels() > 1 )

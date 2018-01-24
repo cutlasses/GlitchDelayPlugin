@@ -3,6 +3,11 @@
 #include "TeensyJuce.h"
 #include "Util.h"
 
+#ifdef TARGET_JUCE
+extern int AUDIO_BLOCK_SAMPLES;           // NASTY HACK - make these global for JUCE
+extern int AUDIO_SAMPLE_RATE;
+#endif
+
 static const int DELAY_BUFFER_SIZE_IN_BYTES(1024*240);      // 240k
 
 ////////////////////////////////////
