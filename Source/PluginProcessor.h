@@ -35,6 +35,9 @@ public:
    #endif
 
     void processBlock (AudioSampleBuffer&, MidiBuffer&) override;
+	
+	double current_sample_rate() const;
+	int current_block_size() const;
 
     //==============================================================================
     AudioProcessorEditor* createEditor() override;
@@ -85,6 +88,9 @@ private:
 	AudioParameterFloat*                                        m_high_head_jitter;
 	
     AudioParameterFloat*                                        m_reverse_head_mix;
+	
+	double														m_current_sample_rate;
+	int															m_current_block_size;
     
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (GlitchDelayPluginAudioProcessor)
 };

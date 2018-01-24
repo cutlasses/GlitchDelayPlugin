@@ -98,6 +98,7 @@ private:
 	static const int                                HEAD_LABEL_HEIGHT;
     static const int                                DIAL_LABEL_HEIGHT;
     static const int                                GLITCH_DELAY_HEIGHT;
+	static const int								DEBUG_LABEL_HEIGHT;
     static const int                                BORDER;
 
     GlitchDelayPluginAudioProcessor&                m_processor;
@@ -118,6 +119,8 @@ private:
 	
 	std::vector<AudioParameterFloat*>				m_all_float_parameters;
 	std::vector<AudioParameterBool*>				m_all_bool_parameters;
+	
+	Label											m_debug_label;
 	
     int                                             m_num_head_dial_rows;
 	int												m_max_head_label_width;

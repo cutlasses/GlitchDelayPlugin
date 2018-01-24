@@ -271,9 +271,22 @@ bool GlitchDelayPluginAudioProcessor::isBusesLayoutSupported (const BusesLayout&
 }
 #endif
 
+double GlitchDelayPluginAudioProcessor::current_sample_rate() const
+{
+	return m_current_sample_rate;
+}
+
+int GlitchDelayPluginAudioProcessor::current_block_size() const
+{
+	return m_current_block_size;
+}
+
 void GlitchDelayPluginAudioProcessor::processBlock (AudioSampleBuffer& buffer, MidiBuffer& midiMessages)
 {
 	ScopedNoDenormals no_denormals;
+	
+	m_current_sample_rate = getSampleRate();
+	m_current_block_size = getBlockSize();
 	
 	bool stereo(false);
 	if( buffer.getNumChannels() > 1 )

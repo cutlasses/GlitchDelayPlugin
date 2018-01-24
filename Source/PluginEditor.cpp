@@ -110,6 +110,7 @@ const int GlitchDelayPluginAudioProcessorEditor::BUTTON_SIZE				= 70;
 const int GlitchDelayPluginAudioProcessorEditor::HEAD_LABEL_HEIGHT			= 14;
 const int GlitchDelayPluginAudioProcessorEditor::DIAL_LABEL_HEIGHT         	= 10;
 const int GlitchDelayPluginAudioProcessorEditor::GLITCH_DELAY_HEIGHT   		= 60;
+const int GlitchDelayPluginAudioProcessorEditor::DEBUG_LABEL_HEIGHT         = 15;
 const int GlitchDelayPluginAudioProcessorEditor::BORDER                		= 40;
 
 const char* head_names[] = { "-1 Oct.", "+0 Oct.", "+1 Oct.", "Reverse" };
@@ -131,6 +132,7 @@ GlitchDelayPluginAudioProcessorEditor::GlitchDelayPluginAudioProcessorEditor (Gl
 	m_freeze_button(nullptr),
 	m_all_float_parameters(),
 	m_all_bool_parameters(),
+	m_debug_label(),
     m_num_head_dial_rows(0),
 	m_max_head_label_width(0),
 	m_primary_row_width(0),
@@ -208,10 +210,14 @@ GlitchDelayPluginAudioProcessorEditor::GlitchDelayPluginAudioProcessorEditor (Gl
         ++m_num_head_dial_rows;
     }
 	
+	m_debug_label.setJustificationType( Justification::left );
+	m_debug_label.setFont( Font(DEBUG_LABEL_HEIGHT - 5) );
+	addAndMakeVisible( m_debug_label );
+	
 	m_primary_row_width 		= ( static_cast<int>(m_main_dials.size()) * DIAL_SIZE_PRIMARY ) + BUTTON_SIZE/*m_freeze_button->getWidth()*/;
 	m_secondary_row_width		= m_max_head_label_width + ( DIAL_SIZE_PRIMARY * HEAD_DIAL_ROW_COUNT_MAX );
     const int width      		= ( BORDER * 2.0f ) + max_val( m_primary_row_width, m_secondary_row_width );
-    const int height      		= ( BORDER * 2.0f ) + DIAL_SIZE_PRIMARY + ( DIAL_SIZE_SECONDARY * ( m_num_head_dial_rows ) ) + (DIAL_SEPARATION * ( m_num_head_dial_rows + 1 )) + GLITCH_DELAY_HEIGHT;
+    const int height      		= ( BORDER * 2.0f ) + DIAL_SIZE_PRIMARY + ( DIAL_SIZE_SECONDARY * ( m_num_head_dial_rows ) ) + (DIAL_SEPARATION * ( m_num_head_dial_rows + 1 )) + GLITCH_DELAY_HEIGHT + DEBUG_LABEL_HEIGHT;
     setSize( width, height );
     
     // start the callback timer
@@ -288,11 +294,16 @@ void GlitchDelayPluginAudioProcessorEditor::resized()
 		// leave space between each row
 		reduced.removeFromTop( DIAL_SEPARATION );
 	}
-    
+	
     Rectangle<int> glitch_rect = reduced.removeFromTop( GLITCH_DELAY_HEIGHT );
     Point<int> glitch_top_left = glitch_rect.getTopLeft();
-    
-    m_glitch_view->set_dimensions( glitch_top_left.getX(), glitch_top_left.getY(), glitch_rect.getWidth(), glitch_rect.getHeight() );
+	
+	m_glitch_view->set_dimensions( glitch_top_left.getX(), glitch_top_left.getY(), glitch_rect.getWidth(), glitch_rect.getHeight() );
+	
+	Rectangle<int> debug_text_rect = reduced.removeFromTop( DEBUG_LABEL_HEIGHT );
+	m_debug_label.setBounds( debug_text_rect );
+	juce::String debug_text = "Sample rate:" + juce::String(m_processor.getSampleRate()) + " Block size:" + juce::String(m_processor.getBlockSize());
+	m_debug_label.setText( debug_text, dontSendNotification );
 }
 
 void GlitchDelayPluginAudioProcessorEditor::sliderValueChanged (Slider* slider)
