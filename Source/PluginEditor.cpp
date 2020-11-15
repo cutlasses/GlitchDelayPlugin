@@ -139,7 +139,7 @@ GlitchDelayPluginAudioProcessorEditor::GlitchDelayPluginAudioProcessorEditor (Gl
 	m_secondary_row_width(0),
     m_glitch_view(nullptr)
 {
-    const OwnedArray<AudioProcessorParameter>& params = p.getParameters();
+    const Array<AudioProcessorParameter*> params = p.getParameters();
     
     for( int i = 0; i < params.size(); ++i )
     {
@@ -179,9 +179,9 @@ GlitchDelayPluginAudioProcessorEditor::GlitchDelayPluginAudioProcessorEditor (Gl
 		{
 			ASSERT_MSG( m_freeze_button == nullptr, "More than one bool parameter?" );
 			
-			m_freeze_button = new ToggleButton( param->name );
+			m_freeze_button = std::make_unique<ToggleButton>( param->name );
 			m_freeze_button->addListener( this );
-			addAndMakeVisible( m_freeze_button );
+			addAndMakeVisible( m_freeze_button.get() );
 			//m_freeze_button->changeWidthToFitText();
 			
 			m_all_bool_parameters.push_back( param );

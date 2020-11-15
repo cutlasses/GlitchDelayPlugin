@@ -115,7 +115,7 @@ private:
 	std::vector<Slider*>                            m_head_dials;		// dials for the tape heads
 	std::vector<Label*>                             m_head_dial_labels;
 	
-	ScopedPointer<ToggleButton>						m_freeze_button;
+	std::unique_ptr<ToggleButton>					m_freeze_button;
 	
 	std::vector<AudioParameterFloat*>				m_all_float_parameters;
 	std::vector<AudioParameterBool*>				m_all_bool_parameters;
