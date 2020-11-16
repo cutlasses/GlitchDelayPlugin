@@ -71,3 +71,6 @@ Builds/MacOSX/build/Debug/GlitchDelayPlugin.app/Contents/Resources/RecentFilesMe
 Builds/MacOSX/build/Debug/GlitchDelayPlugin.app/Contents/PkgInfo
 Builds/MacOSX/build/Debug/GlitchDelayPlugin.app/Contents/MacOS/GlitchDelayPlugin
 Builds/MacOSX/build/Debug/GlitchDelayPlugin.app/Contents/Info.plist
+.DS_Store
+Builds/MacOSX/GlitchDelayPlugin.xcodeproj/xcshareddata/xcschemes/GlitchDelayPlugin - All.xcscheme
+Builds/MacOSX/GlitchDelayPlugin.xcodeproj/xcuserdata/Scott.xcuserdatad/xcdebugger/Breakpoints_v2.xcbkptlist

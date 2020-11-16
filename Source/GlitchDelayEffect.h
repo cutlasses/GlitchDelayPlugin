@@ -52,6 +52,7 @@ public:
 	int                         current_loop_size() const;
 	
 	bool                        looping() const;
+    void                        check_write_head_collision(int write_position, int block_size);
 	bool                        position_inside_section( int position, int start, int end ) const;
 	bool                        position_inside_next_read( int position, int read_size ) const;
 	bool                        crossfade_active() const;

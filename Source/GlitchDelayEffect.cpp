@@ -12,9 +12,6 @@
 #include "CompileSwitches.h"
 
 
-const float MIN_SPEED( 0.25f );
-const float MAX_SPEED( 4.0f );
-
 #ifdef TARGET_JUCE
 int AUDIO_BLOCK_SAMPLES( 512 );           // TODO need a value in JUCE, is it even constant?
 int AUDIO_SAMPLE_RATE( 44100 );           // TODO need a value in JUCE
@@ -155,6 +152,48 @@ bool PLAY_HEAD::looping() const
     return true;
 }
 
+void PLAY_HEAD::check_write_head_collision(int write_position, int block_size)
+{
+    if( looping() )
+    {
+        ASSERT_MSG( play_forwards(), "Only forwards loops currently supported" );
+        if( position_inside_section( write_position, buffered_loop_start(), loop_end() ) )
+        {
+            set_loop_behind_write_head();
+        }
+    }
+    else
+    {
+        ASSERT_MSG( play_speed() == 1.0f, "Only normal playback speed currently supported" );
+        if( play_forwards() )
+        {
+            // write head cannot catch us, as both running as normal speed, so only collide if directly on top
+            if( write_position == m_current_play_head )
+            {
+                set_loop_behind_write_head();
+            }
+        }
+        else
+        {
+            // need to start cross fade with enough time for cross fade to complete before write head collides
+            int num_fade_blocks = FIXED_FADE_TIME_SAMPLES / block_size;
+            if( FIXED_FADE_TIME_SAMPLES % block_size != 0 )
+            {
+                ++num_fade_blocks;
+            }
+            num_fade_blocks          *= 2; // write head advancing towards play head at the same speed
+            const int buffer_samples = num_fade_blocks * block_size;
+            
+            int start = m_delay_buffer.wrap_to_buffer( m_current_play_head - buffer_samples );
+
+            if( position_inside_section( write_position, start, m_current_play_head ) )
+            {
+                set_loop_behind_write_head();
+            }
+        }
+    }
+}
+
 bool PLAY_HEAD::position_inside_section( int position, int start, int end ) const
 {
     if( end < start )
@@ -243,7 +282,7 @@ bool PLAY_HEAD::position_inside_next_read( int position, int read_size ) const
     // otherwise looping
     else
     {
-        ASSERT_MSG( play_forwards(), "Loop not supported playing forwards" );
+        ASSERT_MSG( play_forwards(), "Loop not supported playing backwards" );
         
         // NOTE this tests entire loop NOT next read per-se
         const int loop_end_cf_end = m_delay_buffer.wrap_to_buffer( m_loop_end + FIXED_FADE_TIME_SAMPLES - 1 );
@@ -425,7 +464,6 @@ void PLAY_HEAD::set_loop_behind_write_head()
     {
         int position                           = m_delay_buffer.write_head() - ( play_head_to_write_head_buffer_size() + m_shift_speed );
         m_destination_play_head                = m_delay_buffer.wrap_to_buffer( position );
-        m_current_play_head                    = m_destination_play_head;
         m_fade_samples_remaining               = FIXED_FADE_TIME_SAMPLES;
     }
 }
@@ -883,22 +921,8 @@ void GLITCH_DELAY_EFFECT::update()
         }
         else
         {
-            // TODO Move to PLAY_HEAD object
             // check whether the write head is about to run over the read head, in which case cross fade read head to new position
-            if( play_head.looping() )
-            {
-                if( play_head.position_inside_section( m_delay_buffer.write_head(), play_head.buffered_loop_start(), play_head.loop_end() ) )
-                {
-                    play_head.set_loop_behind_write_head();
-                }
-            }
-            else
-            {
-                if( play_head.position_inside_next_read( m_delay_buffer.write_head(), AUDIO_BLOCK_SAMPLES * 2 ) )
-                {
-                    play_head.set_loop_behind_write_head();
-                }
-            }
+            play_head.check_write_head_collision( m_delay_buffer.write_head(), AUDIO_BLOCK_SAMPLES );
         }
     }
     m_next_beat = false;
