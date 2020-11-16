@@ -4,8 +4,8 @@
 #include "Util.h"
 
 #ifdef TARGET_JUCE
-extern int AUDIO_BLOCK_SAMPLES;           // NASTY HACK - make these global for JUCE
-extern int AUDIO_SAMPLE_RATE;
+inline constexpr int AUDIO_BLOCK_SAMPLES(512);
+inline constexpr int AUDIO_SAMPLE_RATE(44100);
 #endif
 
 static const int DELAY_BUFFER_SIZE_IN_BYTES(1024*240);      // 240k
@@ -52,7 +52,7 @@ public:
 	int                         current_loop_size() const;
 	
 	bool                        looping() const;
-    void                        check_write_head_collision(int write_position, int block_size);
+    void                        check_write_head_collision(int write_position);
 	bool                        position_inside_section( int position, int start, int end ) const;
 	bool                        position_inside_next_read( int position, int read_size ) const;
 	bool                        crossfade_active() const;

@@ -12,11 +12,6 @@
 #include "CompileSwitches.h"
 
 
-#ifdef TARGET_JUCE
-int AUDIO_BLOCK_SAMPLES( 512 );           // TODO need a value in JUCE, is it even constant?
-int AUDIO_SAMPLE_RATE( 44100 );           // TODO need a value in JUCE
-#endif
-
 const int FIXED_FADE_TIME_SAMPLES( (AUDIO_SAMPLE_RATE / 1000.0f ) * 4 ); // 4ms cross fade
 const int MIN_LOOP_SIZE_IN_SAMPLES( (FIXED_FADE_TIME_SAMPLES * 2) + AUDIO_BLOCK_SAMPLES );
 const int MAX_LOOP_SIZE_IN_SAMPLES( AUDIO_SAMPLE_RATE * 0.5f );
@@ -152,7 +147,7 @@ bool PLAY_HEAD::looping() const
     return true;
 }
 
-void PLAY_HEAD::check_write_head_collision(int write_position, int block_size)
+void PLAY_HEAD::check_write_head_collision(int write_position)
 {
     if( looping() )
     {
@@ -176,13 +171,17 @@ void PLAY_HEAD::check_write_head_collision(int write_position, int block_size)
         else
         {
             // need to start cross fade with enough time for cross fade to complete before write head collides
-            int num_fade_blocks = FIXED_FADE_TIME_SAMPLES / block_size;
-            if( FIXED_FADE_TIME_SAMPLES % block_size != 0 )
+            auto calculate_buffer_samples =[]() constexpr
             {
-                ++num_fade_blocks;
-            }
-            num_fade_blocks          *= 2; // write head advancing towards play head at the same speed
-            const int buffer_samples = num_fade_blocks * block_size;
+                int num_fade_blocks = FIXED_FADE_TIME_SAMPLES / AUDIO_BLOCK_SAMPLES;
+                if( FIXED_FADE_TIME_SAMPLES % AUDIO_BLOCK_SAMPLES != 0 )
+                {
+                    ++num_fade_blocks;
+                }
+                num_fade_blocks          *= 2; // write head advancing towards play head at the same speed
+                return num_fade_blocks * AUDIO_BLOCK_SAMPLES;
+            };
+            constexpr int buffer_samples = calculate_buffer_samples();
             
             int start = m_delay_buffer.wrap_to_buffer( m_current_play_head - buffer_samples );
 
@@ -922,7 +921,7 @@ void GLITCH_DELAY_EFFECT::update()
         else
         {
             // check whether the write head is about to run over the read head, in which case cross fade read head to new position
-            play_head.check_write_head_collision( m_delay_buffer.write_head(), AUDIO_BLOCK_SAMPLES );
+            play_head.check_write_head_collision( m_delay_buffer.write_head() );
         }
     }
     m_next_beat = false;
