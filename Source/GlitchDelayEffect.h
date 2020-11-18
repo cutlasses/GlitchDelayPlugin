@@ -130,15 +130,19 @@ public:
 ////////////////////////////////////
 
 class GLITCH_DELAY_EFFECT : public TEENSY_AUDIO_STREAM_WRAPPER
-{
-	static const int NUM_PLAY_HEADS = 4;
-	
+{	
+public:
+
+  static const int        NUM_PLAY_HEADS = 4;
+  
+private:
+  
 	DELAY_BUFFER          	m_delay_buffer;
 	
 	PLAY_HEAD             	m_play_heads[NUM_PLAY_HEADS];
 	
 	float                 	m_loop_size_ratio[NUM_PLAY_HEADS];
-	float					m_jitter_ratio[NUM_PLAY_HEADS];
+	float					          m_jitter_ratio[NUM_PLAY_HEADS];
 	
 	bool                  	m_loop_moving;
 	
@@ -146,12 +150,12 @@ class GLITCH_DELAY_EFFECT : public TEENSY_AUDIO_STREAM_WRAPPER
 	int                   	m_next_sample_size_in_bits;
 	bool                  	m_next_loop_moving;
 	bool                  	m_next_beat;
-	bool					m_next_freeze_active;
+	bool					          m_next_freeze_active;
 	
 protected:
 	
-	void					process_audio_in_impl( int channel, const int16_t* sample_data, int num_samples ) override;
-	void					process_audio_out_impl( int channel, int16_t* sample_data, int num_samples ) override;
+	void					          process_audio_in_impl( int channel, const int16_t* sample_data, int num_samples ) override;
+	void					          process_audio_out_impl( int channel, int16_t* sample_data, int num_samples ) override;
 	
 public:
 	
@@ -170,11 +174,9 @@ public:
 	
 	void                  	set_beat();
 	
-	void					set_freeze_active( bool active );
+	void					          set_freeze_active( bool active );
 	
 	// for plugin display only
 	int                   	num_heads() const;
 	void                  	head_ratio_details( int head, float& loop_start, float& loop_end, float& current_position ) const;
 };
-
-

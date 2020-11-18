@@ -19,6 +19,18 @@ const int MIN_SHIFT_SPEED( 0 );
 const int MAX_SHIFT_SPEED( 100 );
 const int MAX_JITTER_SIZE( AUDIO_SAMPLE_RATE * 0.2f );
 
+constexpr int calculate_reverse_head_buffer_samples()
+{
+    int num_fade_blocks = FIXED_FADE_TIME_SAMPLES / AUDIO_BLOCK_SAMPLES;
+    if( FIXED_FADE_TIME_SAMPLES % AUDIO_BLOCK_SAMPLES != 0 )
+    {
+        ++num_fade_blocks;
+    }
+    num_fade_blocks          *= 2; // write head advancing towards play head at the same speed
+    return num_fade_blocks * AUDIO_BLOCK_SAMPLES;
+};
+constexpr int REVERSE_HEAD_BUFFER_SAMPLES = calculate_reverse_head_buffer_samples();
+
 
 /////////////////////////////////////////////////////////////////////
 
@@ -171,19 +183,8 @@ void PLAY_HEAD::check_write_head_collision(int write_position)
         else
         {
             // need to start cross fade with enough time for cross fade to complete before write head collides
-            auto calculate_buffer_samples =[]() constexpr
-            {
-                int num_fade_blocks = FIXED_FADE_TIME_SAMPLES / AUDIO_BLOCK_SAMPLES;
-                if( FIXED_FADE_TIME_SAMPLES % AUDIO_BLOCK_SAMPLES != 0 )
-                {
-                    ++num_fade_blocks;
-                }
-                num_fade_blocks          *= 2; // write head advancing towards play head at the same speed
-                return num_fade_blocks * AUDIO_BLOCK_SAMPLES;
-            };
-            constexpr int buffer_samples = calculate_buffer_samples();
             
-            int start = m_delay_buffer.wrap_to_buffer( m_current_play_head - buffer_samples );
+            int start = m_delay_buffer.wrap_to_buffer( m_current_play_head - REVERSE_HEAD_BUFFER_SAMPLES );
 
             if( position_inside_section( write_position, start, m_current_play_head ) )
             {
@@ -1009,4 +1010,3 @@ void GLITCH_DELAY_EFFECT::head_ratio_details( int head, float& loop_start, float
         DEBUG_TEXT( "Invalid head" );
     }
 }
-
