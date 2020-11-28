@@ -82,6 +82,10 @@ public:
 #include <vector>
 #include "../JuceLibraryCode/JuceHeader.h"
 
+inline constexpr int AUDIO_BLOCK_SAMPLES(512);
+inline constexpr int AUDIO_SAMPLE_RATE(44100);
+
+
 class TEENSY_AUDIO_STREAM_WRAPPER
 {
     int                             m_num_input_channels;

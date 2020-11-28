@@ -3,10 +3,6 @@
 #include "TeensyJuce.h"
 #include "Util.h"
 
-#ifdef TARGET_JUCE
-inline constexpr int AUDIO_BLOCK_SAMPLES(512);
-inline constexpr int AUDIO_SAMPLE_RATE(44100);
-#endif
 
 static const int DELAY_BUFFER_SIZE_IN_BYTES(1024*240);      // 240k
 
@@ -65,7 +61,7 @@ public:
 	void                        set_play_head( int offset_from_write_head );
 	void                        set_next_loop();
 	
-	void                        set_loop_behind_write_head();
+	void                        set_behind_write_head();
 	
 	void                        read_from_play_head( int16_t* dest, int size );
 	

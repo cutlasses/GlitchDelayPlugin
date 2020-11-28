@@ -12,7 +12,7 @@
 #include "CompileSwitches.h"
 
 
-const int FIXED_FADE_TIME_SAMPLES( (AUDIO_SAMPLE_RATE / 1000.0f ) * 4 ); // 4ms cross fade
+const int FIXED_FADE_TIME_SAMPLES( (AUDIO_SAMPLE_RATE / 1000.0f) * 4 ); // 4ms cross fade
 const int MIN_LOOP_SIZE_IN_SAMPLES( (FIXED_FADE_TIME_SAMPLES * 2) + AUDIO_BLOCK_SAMPLES );
 const int MAX_LOOP_SIZE_IN_SAMPLES( AUDIO_SAMPLE_RATE * 0.5f );
 const int MIN_SHIFT_SPEED( 0 );
@@ -94,7 +94,7 @@ PLAY_HEAD::PLAY_HEAD( const DELAY_BUFFER& delay_buffer, float play_speed ) :
         m_loop_end                      = MAX_LOOP_SIZE_IN_SAMPLES;
     }
     
-    set_loop_behind_write_head();
+    set_behind_write_head();
     
     // set head immediately (don't want to crossfade initially)
     m_current_play_head                 = m_destination_play_head;
@@ -166,7 +166,7 @@ void PLAY_HEAD::check_write_head_collision(int write_position)
         ASSERT_MSG( play_forwards(), "Only forwards loops currently supported" );
         if( position_inside_section( write_position, buffered_loop_start(), loop_end() ) )
         {
-            set_loop_behind_write_head();
+            set_behind_write_head();
         }
     }
     else
@@ -177,7 +177,7 @@ void PLAY_HEAD::check_write_head_collision(int write_position)
             // write head cannot catch us, as both running as normal speed, so only collide if directly on top
             if( write_position == m_current_play_head )
             {
-                set_loop_behind_write_head();
+                set_behind_write_head();
             }
         }
         else
@@ -188,7 +188,7 @@ void PLAY_HEAD::check_write_head_collision(int write_position)
 
             if( position_inside_section( write_position, start, m_current_play_head ) )
             {
-                set_loop_behind_write_head();
+                set_behind_write_head();
             }
         }
     }
@@ -370,7 +370,7 @@ void PLAY_HEAD::set_next_loop()
     // check whether the write head is about to run over the read head, in which case cross fade read head to new position
     if( position_inside_section( m_delay_buffer.write_head(), buffered_loop_start(), m_loop_end ) )
     {
-        set_loop_behind_write_head();
+        set_behind_write_head();
     }
     
     set_play_head( m_loop_start );
@@ -446,7 +446,7 @@ void PLAY_HEAD::set_play_head( int new_play_head )
     m_fade_samples_remaining      = FIXED_FADE_TIME_SAMPLES;
 }
 
-void PLAY_HEAD::set_loop_behind_write_head()
+void PLAY_HEAD::set_behind_write_head()
 {
     if( looping() )
     {
@@ -462,7 +462,17 @@ void PLAY_HEAD::set_loop_behind_write_head()
     }
     else
     {
-        int position                           = m_delay_buffer.write_head() - ( play_head_to_write_head_buffer_size() + m_shift_speed );
+        int position;
+        if( m_play_speed > 0.0f )
+        {
+            position                           = m_delay_buffer.write_head() - AUDIO_BLOCK_SAMPLES - 1;
+            position                           -= (FIXED_FADE_TIME_SAMPLES * (1.0f - m_play_speed));
+        }
+        else
+        {
+            // if reading in reverse we can't overrun write head when cross-fading
+            position                           = m_delay_buffer.write_head() - AUDIO_BLOCK_SAMPLES - 1;
+        }
         m_destination_play_head                = m_delay_buffer.wrap_to_buffer( position );
         m_fade_samples_remaining               = FIXED_FADE_TIME_SAMPLES;
     }
@@ -917,7 +927,7 @@ void GLITCH_DELAY_EFFECT::update()
         if( m_next_beat && play_head.play_forwards() && !play_head.crossfade_active() ) // let the reverse head play regardless of beats
         {
             play_head.set_next_loop();
-            play_head.set_loop_behind_write_head();
+            play_head.set_behind_write_head();
         }
         else
         {
