@@ -11,18 +11,28 @@
 #include "GlitchDelayEffect.h"
 #include "CompileSwitches.h"
 
+constexpr int fade_time_ms_to_samples(int fade_time_ms)
+{
+    return (AUDIO_SAMPLE_RATE / 1000) * fade_time_ms;
+}
 
-const int FIXED_FADE_TIME_SAMPLES( (AUDIO_SAMPLE_RATE / 1000.0f) * 4 ); // 4ms cross fade
-const int MIN_LOOP_SIZE_IN_SAMPLES( (FIXED_FADE_TIME_SAMPLES * 2) + AUDIO_BLOCK_SAMPLES );
-const int MAX_LOOP_SIZE_IN_SAMPLES( AUDIO_SAMPLE_RATE * 0.5f );
-const int MIN_SHIFT_SPEED( 0 );
-const int MAX_SHIFT_SPEED( 100 );
-const int MAX_JITTER_SIZE( AUDIO_SAMPLE_RATE * 0.2f );
+constexpr int WRITE_FADE_TIME_MS(5);
+constexpr int REVERSE_FADE_TIME_MS(10);
+constexpr int LOOP_FADE_TIME_MS(4);
+constexpr int WRITE_FADE_TIME_SAMPLES( fade_time_ms_to_samples(WRITE_FADE_TIME_MS) );
+constexpr int REVERSE_FADE_TIME_SAMPLES( fade_time_ms_to_samples(REVERSE_FADE_TIME_MS) );
+constexpr int LOOP_FADE_TIME_SAMPLES( fade_time_ms_to_samples(LOOP_FADE_TIME_MS) );
+constexpr int MIN_LOOP_SIZE_IN_SAMPLES( (LOOP_FADE_TIME_SAMPLES * 2) + AUDIO_BLOCK_SAMPLES );
+constexpr int MAX_LOOP_SIZE_IN_SAMPLES( AUDIO_SAMPLE_RATE * 0.5f );
+constexpr int MIN_SHIFT_SPEED( 0 );
+constexpr int MAX_SHIFT_SPEED( 100 );
+constexpr int MAX_JITTER_SIZE( AUDIO_SAMPLE_RATE * 0.2f );
+
 
 constexpr int calculate_reverse_head_buffer_samples()
 {
-    int num_fade_blocks = FIXED_FADE_TIME_SAMPLES / AUDIO_BLOCK_SAMPLES;
-    if( FIXED_FADE_TIME_SAMPLES % AUDIO_BLOCK_SAMPLES != 0 )
+    int num_fade_blocks = REVERSE_FADE_TIME_SAMPLES / AUDIO_BLOCK_SAMPLES;
+    if( REVERSE_FADE_TIME_SAMPLES % AUDIO_BLOCK_SAMPLES != 0 )
     {
         ++num_fade_blocks;
     }
@@ -72,8 +82,9 @@ int cross_fade_samples( int x, int y, float t )
 
 /////////////////////////////////////////////////////////////////////
 
-PLAY_HEAD::PLAY_HEAD( const DELAY_BUFFER& delay_buffer, float play_speed ) :
+PLAY_HEAD::PLAY_HEAD( const DELAY_BUFFER& delay_buffer, float play_speed, int fade_samples ) :
     m_delay_buffer( delay_buffer ),
+    m_fade_samples( fade_samples ),
     m_current_play_head( 0.0f ),
     m_destination_play_head( 0.0f ),
     m_play_speed( play_speed ),
@@ -125,7 +136,7 @@ int PLAY_HEAD::loop_end() const
 int PLAY_HEAD::play_head_to_write_head_buffer_size() const
 {
     const int half_jitter     = ( MAX_JITTER_SIZE / 2 ) + 1;
-    const int buffer_samples  = FIXED_FADE_TIME_SAMPLES + FIXED_FADE_TIME_SAMPLES + AUDIO_BLOCK_SAMPLES + half_jitter;
+    const int buffer_samples  = m_fade_samples + m_fade_samples + AUDIO_BLOCK_SAMPLES + half_jitter;
     
     return buffer_samples;
 }
@@ -285,7 +296,7 @@ bool PLAY_HEAD::position_inside_next_read( int position, int read_size ) const
         ASSERT_MSG( play_forwards(), "Loop not supported playing backwards" );
         
         // NOTE this tests entire loop NOT next read per-se
-        const int loop_end_cf_end = m_delay_buffer.wrap_to_buffer( m_loop_end + FIXED_FADE_TIME_SAMPLES - 1 );
+        const int loop_end_cf_end = m_delay_buffer.wrap_to_buffer( m_loop_end + m_fade_samples - 1 );
         if( position_inside_section( position, m_loop_start, loop_end_cf_end ) )
         {
             return true;
@@ -389,7 +400,7 @@ int16_t PLAY_HEAD::read_sample_with_cross_fade()
         
         int16_t destination_sample        = m_delay_buffer.read_sample_with_speed( m_destination_play_head, m_play_speed );
         
-        const float t                     = static_cast<float>(m_fade_samples_remaining) / FIXED_FADE_TIME_SAMPLES; // t=0 at destination, t=1 at current
+        const float t                     = static_cast<float>(m_fade_samples_remaining) / m_fade_samples; // t=0 at destination, t=1 at current
         --m_fade_samples_remaining;
         
         sample                            = cross_fade_samples( destination_sample, current_sample, t );
@@ -443,7 +454,7 @@ void PLAY_HEAD::set_play_head( int new_play_head )
     
     m_destination_play_head       = new_play_head;
     
-    m_fade_samples_remaining      = FIXED_FADE_TIME_SAMPLES;
+    m_fade_samples_remaining      = m_fade_samples;
 }
 
 void PLAY_HEAD::set_behind_write_head()
@@ -466,7 +477,7 @@ void PLAY_HEAD::set_behind_write_head()
         if( m_play_speed > 0.0f )
         {
             position                           = m_delay_buffer.write_head() - AUDIO_BLOCK_SAMPLES - 1;
-            position                           -= (FIXED_FADE_TIME_SAMPLES * (1.0f - m_play_speed));
+            position                           -= (m_fade_samples * (1.0f - m_play_speed));
         }
         else
         {
@@ -474,7 +485,7 @@ void PLAY_HEAD::set_behind_write_head()
             position                           = m_delay_buffer.write_head() - AUDIO_BLOCK_SAMPLES - 1;
         }
         m_destination_play_head                = m_delay_buffer.wrap_to_buffer( position );
-        m_fade_samples_remaining               = FIXED_FADE_TIME_SAMPLES;
+        m_fade_samples_remaining               = m_fade_samples;
     }
 }
 
@@ -509,7 +520,7 @@ void PLAY_HEAD::enable_loop( int start, int end )
     
     // force a new cross fade
     m_destination_play_head           = m_loop_start;
-    m_fade_samples_remaining          = FIXED_FADE_TIME_SAMPLES;
+    m_fade_samples_remaining          = m_fade_samples;
 }
 
 
@@ -782,7 +793,7 @@ void DELAY_BUFFER::write_to_buffer( const int16_t* source, int size )
             int16_t old_sample       = read_sample( m_write_head );
             int16_t new_sample       = source[x];
             
-            const float t            = static_cast<float>(m_fade_samples_remaining) / FIXED_FADE_TIME_SAMPLES; // t=1 at old t=0 at new
+            const float t            = static_cast<float>(m_fade_samples_remaining) / WRITE_FADE_TIME_SAMPLES; // t=1 at old t=0 at new
             --m_fade_samples_remaining;
             
             int16_t cf_sample         = cross_fade_samples( new_sample, old_sample, t );
@@ -839,7 +850,7 @@ void DELAY_BUFFER::set_freeze( bool freeze )
 void DELAY_BUFFER::fade_in_write()
 {
     ASSERT_MSG( m_fade_samples_remaining == 0, "DELAY_BUFFER::fade_in_write() trying to start a fade during a fade" );
-    m_fade_samples_remaining = FIXED_FADE_TIME_SAMPLES;
+    m_fade_samples_remaining = WRITE_FADE_TIME_SAMPLES;
 }
 
 #ifdef DEBUG_OUTPUT
@@ -859,7 +870,7 @@ void DELAY_BUFFER::debug_output()
 
 GLITCH_DELAY_EFFECT::GLITCH_DELAY_EFFECT() :
     m_delay_buffer(),
-    m_play_heads{ PLAY_HEAD( m_delay_buffer, 0.5f ), PLAY_HEAD( m_delay_buffer, 1.0f ), PLAY_HEAD( m_delay_buffer, 2.0f ), PLAY_HEAD( m_delay_buffer, -1.0f ) },
+    m_play_heads{ PLAY_HEAD( m_delay_buffer, 0.5f, LOOP_FADE_TIME_MS ), PLAY_HEAD( m_delay_buffer, 1.0f, LOOP_FADE_TIME_MS ), PLAY_HEAD( m_delay_buffer, 2.0f, LOOP_FADE_TIME_MS ), PLAY_HEAD( m_delay_buffer, -1.0f, REVERSE_FADE_TIME_MS ) },
 	m_loop_size_ratio(),
 	m_jitter_ratio(),
     m_loop_moving(true),

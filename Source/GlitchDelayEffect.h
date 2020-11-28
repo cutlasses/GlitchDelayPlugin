@@ -15,7 +15,8 @@ class DELAY_BUFFER;
 class PLAY_HEAD
 {
 	const DELAY_BUFFER&         m_delay_buffer;     // TODO pass in to save storage?
-	
+    const int                   m_fade_samples;
+    
 	float                       m_current_play_head;
 	float                       m_destination_play_head;
 	float                       m_play_speed;       // negative means play in reverse (loop sections currently not supported)
@@ -37,7 +38,7 @@ class PLAY_HEAD
 	
 public:
 	
-	PLAY_HEAD( const DELAY_BUFFER& delay_buffer, float play_speed );
+	PLAY_HEAD( const DELAY_BUFFER& delay_buffer, float play_speed, int fade_samples );
 	
 	int                         current_position() const;
 	int                         destination_position() const;
