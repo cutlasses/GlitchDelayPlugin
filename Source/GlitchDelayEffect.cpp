@@ -17,7 +17,7 @@ constexpr int fade_time_ms_to_samples(int fade_time_ms)
 }
 
 constexpr int WRITE_FADE_TIME_MS(5);
-constexpr int REVERSE_FADE_TIME_MS(10);
+constexpr int REVERSE_FADE_TIME_MS(50);
 constexpr int LOOP_FADE_TIME_MS(4);
 constexpr int WRITE_FADE_TIME_SAMPLES( fade_time_ms_to_samples(WRITE_FADE_TIME_MS) );
 constexpr int REVERSE_FADE_TIME_SAMPLES( fade_time_ms_to_samples(REVERSE_FADE_TIME_MS) );
@@ -870,7 +870,7 @@ void DELAY_BUFFER::debug_output()
 
 GLITCH_DELAY_EFFECT::GLITCH_DELAY_EFFECT() :
     m_delay_buffer(),
-    m_play_heads{ PLAY_HEAD( m_delay_buffer, 0.5f, LOOP_FADE_TIME_MS ), PLAY_HEAD( m_delay_buffer, 1.0f, LOOP_FADE_TIME_MS ), PLAY_HEAD( m_delay_buffer, 2.0f, LOOP_FADE_TIME_MS ), PLAY_HEAD( m_delay_buffer, -1.0f, REVERSE_FADE_TIME_MS ) },
+    m_play_heads{ PLAY_HEAD( m_delay_buffer, 0.5f, LOOP_FADE_TIME_SAMPLES ), PLAY_HEAD( m_delay_buffer, 1.0f, LOOP_FADE_TIME_SAMPLES ), PLAY_HEAD( m_delay_buffer, 2.0f, LOOP_FADE_TIME_SAMPLES ), PLAY_HEAD( m_delay_buffer, -1.0f, REVERSE_FADE_TIME_SAMPLES ) },
 	m_loop_size_ratio(),
 	m_jitter_ratio(),
     m_loop_moving(true),
