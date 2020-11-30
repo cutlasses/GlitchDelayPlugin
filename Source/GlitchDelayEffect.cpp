@@ -935,15 +935,18 @@ void GLITCH_DELAY_EFFECT::update()
         
         play_head.set_loop_size( m_loop_size_ratio[pi] );
         
-        if( m_next_beat && play_head.play_forwards() && !play_head.crossfade_active() ) // let the reverse head play regardless of beats
+        if( !play_head.crossfade_active() )
         {
-            play_head.set_next_loop();
-            play_head.set_behind_write_head();
-        }
-        else
-        {
-            // check whether the write head is about to run over the read head, in which case cross fade read head to new position
-            play_head.check_write_head_collision( m_delay_buffer.write_head() );
+            if( m_next_beat && play_head.play_forwards() ) // let the reverse head play regardless of beats
+            {
+                play_head.set_next_loop();
+                play_head.set_behind_write_head();
+            }
+            else
+            {
+                // check whether the write head is about to run over the read head, in which case cross fade read head to new position
+                play_head.check_write_head_collision( m_delay_buffer.write_head() );
+            }
         }
     }
     m_next_beat = false;
