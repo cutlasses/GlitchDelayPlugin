@@ -1,19 +1,12 @@
-#ifdef TARGET_TEENSY
-#include <Audio.h>
-#include <Wire.h>
-#include <SPI.h>
-#include <SD.h>
-#include <SerialFlash.h>
-#endif // TARGET_TEENSY
-
 #include <string.h>
 #include <math.h>
-#include "GlitchDelayEffect.h"
 #include "CompileSwitches.h"
+#include "GlitchDelayEffect.h"
+#include "SoundEngine.h"
 
 constexpr int fade_time_ms_to_samples(int fade_time_ms)
 {
-    return (AUDIO_SAMPLE_RATE / 1000) * fade_time_ms;
+    return (SAMPLE_RATE / 1000) * fade_time_ms;
 }
 
 constexpr int WRITE_FADE_TIME_MS(5);
@@ -23,10 +16,10 @@ constexpr int WRITE_FADE_TIME_SAMPLES( fade_time_ms_to_samples(WRITE_FADE_TIME_M
 constexpr int REVERSE_FADE_TIME_SAMPLES( fade_time_ms_to_samples(REVERSE_FADE_TIME_MS) );
 constexpr int LOOP_FADE_TIME_SAMPLES( fade_time_ms_to_samples(LOOP_FADE_TIME_MS) );
 constexpr int MIN_LOOP_SIZE_IN_SAMPLES( (LOOP_FADE_TIME_SAMPLES * 2) + AUDIO_BLOCK_SAMPLES );
-constexpr int MAX_LOOP_SIZE_IN_SAMPLES( AUDIO_SAMPLE_RATE * 0.5f );
+constexpr int MAX_LOOP_SIZE_IN_SAMPLES( SAMPLE_RATE * 0.5f );
 constexpr int MIN_SHIFT_SPEED( 0 );
 constexpr int MAX_SHIFT_SPEED( 100 );
-constexpr int MAX_JITTER_SIZE( AUDIO_SAMPLE_RATE * 0.2f );
+constexpr int MAX_JITTER_SIZE( SAMPLE_RATE * 0.2f );
 
 
 constexpr int calculate_reverse_head_buffer_samples()
@@ -52,7 +45,7 @@ int delay_buffer_size_in_samples( int sample_size_in_bits )
 
 int convert_time_in_ms_to_samples( int time_in_ms )
 {
-    static int num_samples_per_ms = AUDIO_SAMPLE_RATE / 1000;
+    static int num_samples_per_ms = SAMPLE_RATE / 1000;
     return num_samples_per_ms * time_in_ms;
 }
 
@@ -886,38 +879,14 @@ GLITCH_DELAY_EFFECT::GLITCH_DELAY_EFFECT() :
 	}
 }
 
-void GLITCH_DELAY_EFFECT::process_audio_in_impl( int channel, const int16_t* sample_data, int num_samples )
-{
-    ASSERT_MSG( channel == 0, "Only mono input supported" );
-	
-    m_delay_buffer.write_to_buffer( sample_data, num_samples );
-}
-
-void GLITCH_DELAY_EFFECT::process_audio_out_impl( int channel, int16_t* sample_data, int num_samples )
-{
-    ASSERT_MSG( !m_play_heads[channel].position_inside_next_read( m_delay_buffer.write_head(), num_samples ), "Non - reading over write buffer\n" ); // position after write head is OLD DATA
- 
-	m_play_heads[channel].read_from_play_head( sample_data, num_samples );
-}
-
-int GLITCH_DELAY_EFFECT::num_input_channels() const
-{
-    return 1;
-}
-
-int GLITCH_DELAY_EFFECT::num_output_channels() const
-{
-    return NUM_PLAY_HEADS;
-}
-
-void GLITCH_DELAY_EFFECT::update()
+void GLITCH_DELAY_EFFECT::update( const int16_t* input_sample_data, int num_samples )
 {
     static int num_updates(0);
     ++num_updates;
     
     m_delay_buffer.set_bit_depth( m_next_sample_size_in_bits );
-	m_delay_buffer.set_freeze( m_next_freeze_active );
-	
+    m_delay_buffer.set_freeze( m_next_freeze_active );
+    
     m_loop_moving               = m_next_loop_moving;
     
     for( int pi = 0; pi < NUM_PLAY_HEADS; ++pi )
@@ -951,14 +920,13 @@ void GLITCH_DELAY_EFFECT::update()
     }
     m_next_beat = false;
     
-    // read in on channel 0
-    process_audio_in( 0 );
-    
-    // write out all the playheads
-    for( int pi = 0; pi < NUM_PLAY_HEADS; ++pi )
-    {
-        process_audio_out( pi );
-    }
+    m_delay_buffer.write_to_buffer( input_sample_data, num_samples );
+}
+
+void GLITCH_DELAY_EFFECT::fill_output( int16_t* output_sample_data, int num_samples, int channel )
+{
+    ASSERT_MSG( !m_play_heads[channel].position_inside_next_read( m_delay_buffer.write_head(), num_samples ), "Non - reading over write buffer\n" ); // position after write head is OLD DATA
+    m_play_heads[channel].read_from_play_head( output_sample_data, num_samples );
 }
 
 void GLITCH_DELAY_EFFECT::set_bit_depth( int sample_size_in_bits )

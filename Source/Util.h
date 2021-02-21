@@ -1,5 +1,7 @@
 #pragma once
 
+#include <type_traits>
+
 #include "CompileSwitches.h"
 
 #ifdef DEBUG_OUTPUT
@@ -104,6 +106,20 @@ T lerp( const T& v1, const T& v2, float t )
 inline int trunc_to_int( float v )
 {
   return static_cast<int>( v );
+}
+
+template<typename T>
+inline constexpr T round_to_int(float v)
+{
+    static_assert( std::is_integral<T>::value );
+    if( v > 0.0f )
+    {
+        return static_cast<T>( v + 0.5f );
+    }
+    else
+    {
+        return static_cast<T>( v - 0.5f );
+    }
 }
 
 /////////////////////////////////////////////////////

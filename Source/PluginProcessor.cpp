@@ -17,6 +17,8 @@
 
 #include "GlitchDelayEffect.h"
 
+#include "SoundEngine.h"
+
 namespace
 {
     // mixdown N channels of buffer into channel 0, using the weights array
@@ -288,7 +290,7 @@ void GlitchDelayPluginAudioProcessor::processBlock (AudioSampleBuffer& buffer, M
 	m_current_sample_rate	= getSampleRate();
 	m_current_block_size	= getBlockSize();
 	
-    jassert(AUDIO_SAMPLE_RATE == m_current_sample_rate);
+    jassert(SAMPLE_RATE == m_current_sample_rate);
     jassert(AUDIO_BLOCK_SAMPLES == m_current_block_size);
     //AUDIO_BLOCK_SAMPLES		= m_current_block_size;
 	//AUDIO_SAMPLE_RATE		= trunc_to_int( m_current_sample_rate );
@@ -319,8 +321,6 @@ void GlitchDelayPluginAudioProcessor::processBlock (AudioSampleBuffer& buffer, M
 		// blend feedback into input
 		mix_into( buffer, m_prev_buffer, 0, 1.0f - (*m_feedback), *m_feedback );
 	}
-	
-	m_effect->pre_process_audio( buffer, m_effect->num_input_channels(), m_effect->num_output_channels() );
 
 	m_effect->set_loop_size( LOW_HEAD, *m_low_head_size );
 	m_effect->set_jitter( LOW_HEAD, *m_low_head_jitter );
@@ -332,14 +332,39 @@ void GlitchDelayPluginAudioProcessor::processBlock (AudioSampleBuffer& buffer, M
 	m_effect->set_freeze_active( *m_freeze_active );
 	
 	m_effect->set_loop_moving(false);
-	m_effect->update();
-	
-	AudioSampleBuffer output( m_effect->num_output_channels(), buffer.getNumSamples() );
-	m_effect->post_process_audio( output );
-	
+    
+    // convert to 16 bit
+    std::vector<int16_t> sample_data;
+    sample_data.reserve( buffer.getNumSamples() );
+    const float* input_data = buffer.getReadPointer(0);
+    for( int i = 0; i < buffer.getNumSamples(); ++i )
+    {
+        const int16_t sample = round_to_int<int16_t>( input_data[i] * static_cast<float>(std::numeric_limits<int16_t>::max()) );
+        sample_data.push_back( sample );
+    }
+    
+    m_effect->update( sample_data.data(), buffer.getNumSamples() );
+        
 	// mix down effect output to 1 channel
-	std::array<float, 4> mix_weights = { (*m_low_head_mix) * 0.25f, (*m_normal_head_mix) * 0.25f, (*m_high_head_mix) * 0.25f, (*m_reverse_head_mix) * 0.25f };
-	mix_down( output, mix_weights );
+    constexpr int num_glitch_channels = 4;
+    std::array<float, 4> mix_weights = { (*m_low_head_mix) * 0.25f, (*m_normal_head_mix) * 0.25f, (*m_high_head_mix) * 0.25f, (*m_reverse_head_mix) * 0.25f };
+
+    AudioSampleBuffer output( num_glitch_channels, buffer.getNumSamples() );
+    std::vector<int16_t> output_data16;
+    output_data16.resize(buffer.getNumSamples());
+    for( int c = 0; c < num_glitch_channels; ++c )
+    {
+        m_effect->fill_output( output_data16.data(), buffer.getNumSamples(), c );
+        
+        //convert to float and fill output
+        float* output_data = output.getWritePointer(c);
+        for( int s = 0; s < buffer.getNumSamples(); ++s )
+        {
+            const float samplef = static_cast<float>(output_data16[s]) / static_cast<float>(std::numeric_limits<int16_t>::max());
+            output_data[s]      = samplef;
+        }
+    }
+    mix_down( output, mix_weights );
 	
 	// mix output with original input
 	mix_into( output, buffer, 0, *m_mix, 1.0f - *(m_mix) );

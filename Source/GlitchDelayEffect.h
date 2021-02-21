@@ -1,6 +1,5 @@
 #pragma once
 
-#include "TeensyJuce.h"
 #include "Util.h"
 
 
@@ -126,11 +125,11 @@ public:
 
 ////////////////////////////////////
 
-class GLITCH_DELAY_EFFECT : public TEENSY_AUDIO_STREAM_WRAPPER
+class GLITCH_DELAY_EFFECT
 {	
 public:
 
-  static const int        NUM_PLAY_HEADS = 4;
+  static const int          NUM_PLAY_HEADS = 4;
   
 private:
   
@@ -139,7 +138,7 @@ private:
 	PLAY_HEAD             	m_play_heads[NUM_PLAY_HEADS];
 	
 	float                 	m_loop_size_ratio[NUM_PLAY_HEADS];
-	float					          m_jitter_ratio[NUM_PLAY_HEADS];
+	float					m_jitter_ratio[NUM_PLAY_HEADS];
 	
 	bool                  	m_loop_moving;
 	
@@ -147,22 +146,15 @@ private:
 	int                   	m_next_sample_size_in_bits;
 	bool                  	m_next_loop_moving;
 	bool                  	m_next_beat;
-	bool					          m_next_freeze_active;
-	
-protected:
-	
-	void					          process_audio_in_impl( int channel, const int16_t* sample_data, int num_samples ) override;
-	void					          process_audio_out_impl( int channel, int16_t* sample_data, int num_samples ) override;
+	bool					m_next_freeze_active;
 	
 public:
 	
 	GLITCH_DELAY_EFFECT();
-	
-	int                   	num_input_channels() const override;
-	int                   	num_output_channels() const override;
-	
-	void                  	update() override;
-	
+		
+	void                    update( const int16_t* input_sample_data, int num_samples ); // read from sample data, then output to it
+    void                    fill_output( int16_t* output_sample_data, int num_samples, int channel );
+    
 	void                  	set_bit_depth( int sample_size_in_bits );
 	void                  	set_loop_moving( bool moving );
 	
@@ -171,7 +163,7 @@ public:
 	
 	void                  	set_beat();
 	
-	void					          set_freeze_active( bool active );
+	void					set_freeze_active( bool active );
 	
 	// for plugin display only
 	int                   	num_heads() const;

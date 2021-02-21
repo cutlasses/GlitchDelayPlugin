@@ -18,12 +18,11 @@
     <GROUP id="{F9538C06-630A-67D3-659E-080AF5B69096}" name="Source">
       <FILE id="mopxls" name="CompileSwitches.h" compile="0" resource="0"
             file="Source/CompileSwitches.h"/>
+      <FILE id="VA8Us0" name="SoundEngine.h" compile="0" resource="0" file="Source/SoundEngine.h"/>
       <FILE id="cUGBYN" name="GlitchDelayEffect.cpp" compile="1" resource="0"
             file="Source/GlitchDelayEffect.cpp"/>
       <FILE id="nCjZs6" name="GlitchDelayEffect.h" compile="0" resource="0"
             file="Source/GlitchDelayEffect.h"/>
-      <FILE id="tfvDKe" name="TeensyJuce.cpp" compile="1" resource="0" file="Source/TeensyJuce.cpp"/>
-      <FILE id="WPu7Pa" name="TeensyJuce.h" compile="0" resource="0" file="Source/TeensyJuce.h"/>
       <FILE id="yEYEtw" name="Util.cpp" compile="1" resource="0" file="Source/Util.cpp"/>
       <FILE id="k3NPJo" name="Util.h" compile="0" resource="0" file="Source/Util.h"/>
       <FILE id="Cel3iz" name="PluginProcessor.cpp" compile="1" resource="0"
