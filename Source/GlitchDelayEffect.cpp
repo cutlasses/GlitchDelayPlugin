@@ -2,6 +2,7 @@
 #include <math.h>
 #include "CompileSwitches.h"
 #include "GlitchDelayEffect.h"
+#include "GlitchDelayInterface.h"
 #include "SoundEngine.h"
 
 constexpr int fade_time_ms_to_samples(int fade_time_ms)
@@ -861,52 +862,36 @@ void DELAY_BUFFER::debug_output()
 
 /////////////////////////////////////////////////////////////////////
 
-GLITCH_DELAY_EFFECT::GLITCH_DELAY_EFFECT() :
+GLITCH_DELAY_EFFECT::GLITCH_DELAY_EFFECT(const GLITCH_DELAY_INTERFACE& interface) :
+    m_interface(interface),
     m_delay_buffer(),
-    m_play_heads{ PLAY_HEAD( m_delay_buffer, 0.5f, LOOP_FADE_TIME_SAMPLES ), PLAY_HEAD( m_delay_buffer, 1.0f, LOOP_FADE_TIME_SAMPLES ), PLAY_HEAD( m_delay_buffer, 2.0f, LOOP_FADE_TIME_SAMPLES ), PLAY_HEAD( m_delay_buffer, -1.0f, REVERSE_FADE_TIME_SAMPLES ) },
-	m_loop_size_ratio(),
-	m_jitter_ratio(),
-    m_loop_moving(true),
-    m_next_sample_size_in_bits(12),
-    m_next_loop_moving(true),
-    m_next_beat(false),
-	m_next_freeze_active(false)
+    m_play_heads{ PLAY_HEAD( m_delay_buffer, 0.5f, LOOP_FADE_TIME_SAMPLES ), PLAY_HEAD( m_delay_buffer, 1.0f, LOOP_FADE_TIME_SAMPLES ), PLAY_HEAD( m_delay_buffer, 2.0f, LOOP_FADE_TIME_SAMPLES ), PLAY_HEAD( m_delay_buffer, -1.0f, REVERSE_FADE_TIME_SAMPLES ) }
 {
-	for( int i = 0; i < NUM_PLAY_HEADS; ++ i )
-	{
-		m_loop_size_ratio[i]	= 0.0f;
-		m_jitter_ratio[i]		= 0.0f;
-	}
 }
 
 void GLITCH_DELAY_EFFECT::update( const int16_t* input_sample_data, int num_samples )
 {
     static int num_updates(0);
     ++num_updates;
-    
-    m_delay_buffer.set_bit_depth( m_next_sample_size_in_bits );
-    m_delay_buffer.set_freeze( m_next_freeze_active );
-    
-    m_loop_moving               = m_next_loop_moving;
-    
+        
     for( int pi = 0; pi < NUM_PLAY_HEADS; ++pi )
     {
         PLAY_HEAD& play_head = m_play_heads[pi];
-        if( m_loop_moving )
+        if( m_interface.loop_moving() )
         {
-            play_head.set_shift_speed( m_jitter_ratio[pi] ); // TODO remove this mode?
+            play_head.set_shift_speed( m_interface.jitter(pi) ); // TODO remove this mode?
         }
         else
         {
             play_head.set_shift_speed( 0.0f );
-            play_head.set_jitter( m_jitter_ratio[pi] );
+            play_head.set_jitter( m_interface.jitter(pi) );
         }
         
-        play_head.set_loop_size( m_loop_size_ratio[pi] );
+        play_head.set_loop_size( m_interface.loop_size(pi) );
         
         if( !play_head.crossfade_active() )
         {
-            if( m_next_beat && play_head.play_forwards() ) // let the reverse head play regardless of beats
+            if( m_interface.beat() && play_head.play_forwards() ) // let the reverse head play regardless of beats
             {
                 play_head.set_next_loop();
                 play_head.set_behind_write_head();
@@ -918,7 +903,8 @@ void GLITCH_DELAY_EFFECT::update( const int16_t* input_sample_data, int num_samp
             }
         }
     }
-    m_next_beat = false;
+    
+    // interface should reset this m_next_beat = false;
     
     m_delay_buffer.write_to_buffer( input_sample_data, num_samples );
 }
@@ -927,39 +913,6 @@ void GLITCH_DELAY_EFFECT::fill_output( int16_t* output_sample_data, int num_samp
 {
     ASSERT_MSG( !m_play_heads[channel].position_inside_next_read( m_delay_buffer.write_head(), num_samples ), "Non - reading over write buffer\n" ); // position after write head is OLD DATA
     m_play_heads[channel].read_from_play_head( output_sample_data, num_samples );
-}
-
-void GLITCH_DELAY_EFFECT::set_bit_depth( int sample_size_in_bits )
-{
-    m_next_sample_size_in_bits = sample_size_in_bits;
-    //set_bit_depth_impl( sample_size_in_bits );
-}
-
-void GLITCH_DELAY_EFFECT::set_loop_moving( bool moving )
-{
-    m_next_loop_moving = moving;
-}
-
-void GLITCH_DELAY_EFFECT::set_loop_size( int play_head, float loop_size )
-{
-	ASSERT_MSG( play_head < NUM_PLAY_HEADS, "Invalid play head index" );
-	m_loop_size_ratio[play_head] = loop_size;
-}
-
-void GLITCH_DELAY_EFFECT::set_jitter( int play_head, float jitter )
-{
-	ASSERT_MSG( play_head < NUM_PLAY_HEADS, "Invalid play head index" );
-	m_jitter_ratio[play_head] = jitter;
-}
-
-void GLITCH_DELAY_EFFECT::set_beat()
-{
-    m_next_beat = true;
-}
-
-void GLITCH_DELAY_EFFECT::set_freeze_active( bool active )
-{
-	m_next_freeze_active = active;
 }
 
 int GLITCH_DELAY_EFFECT::num_heads() const

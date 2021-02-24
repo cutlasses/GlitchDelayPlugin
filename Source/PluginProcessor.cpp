@@ -16,6 +16,7 @@
 #include "PluginEditor.h"
 
 #include "GlitchDelayEffect.h"
+#include "GlitchDelayInterface.h"
 
 #include "SoundEngine.h"
 
@@ -91,7 +92,8 @@ GlitchDelayPluginAudioProcessor::GlitchDelayPluginAudioProcessor()
 #endif
 {
     // create the wrapped effect
-	m_effect = std::make_unique< GLITCH_DELAY_EFFECT >();
+    m_interface = std::make_unique<GLITCH_DELAY_INTERFACE>();
+	m_effect    = std::make_unique<GLITCH_DELAY_EFFECT>(*m_interface);
     
     addParameter( m_mix = new AudioParameterFloat(					"mix",          		// parameterID
 																	"Mix",          		// parameter name
@@ -322,16 +324,16 @@ void GlitchDelayPluginAudioProcessor::processBlock (AudioSampleBuffer& buffer, M
 		mix_into( buffer, m_prev_buffer, 0, 1.0f - (*m_feedback), *m_feedback );
 	}
 
-	m_effect->set_loop_size( LOW_HEAD, *m_low_head_size );
-	m_effect->set_jitter( LOW_HEAD, *m_low_head_jitter );
-	m_effect->set_loop_size( NORMAL_HEAD, *m_normal_head_size );
-	m_effect->set_jitter( NORMAL_HEAD, *m_normal_head_jitter );
-	m_effect->set_loop_size( HIGH_HEAD, *m_high_head_size );
-	m_effect->set_jitter( HIGH_HEAD, *m_high_head_jitter );
+	m_interface->set_loop_size( LOW_HEAD, *m_low_head_size );
+	m_interface->set_jitter( LOW_HEAD, *m_low_head_jitter );
+	m_interface->set_loop_size( NORMAL_HEAD, *m_normal_head_size );
+	m_interface->set_jitter( NORMAL_HEAD, *m_normal_head_jitter );
+	m_interface->set_loop_size( HIGH_HEAD, *m_high_head_size );
+	m_interface->set_jitter( HIGH_HEAD, *m_high_head_jitter );
 	
-	m_effect->set_freeze_active( *m_freeze_active );
+	m_interface->set_freeze_active( *m_freeze_active );
 	
-	m_effect->set_loop_moving(false);
+	m_interface->set_loop_moving(false);
     
     // convert to 16 bit
     std::vector<int16_t> sample_data;

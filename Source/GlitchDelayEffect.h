@@ -8,6 +8,7 @@ static const int DELAY_BUFFER_SIZE_IN_BYTES(1024*240);      // 240k
 ////////////////////////////////////
 
 class DELAY_BUFFER;
+class GLITCH_DELAY_INTERFACE;
 
 ////////////////////////////////////
 
@@ -129,42 +130,23 @@ class GLITCH_DELAY_EFFECT
 {	
 public:
 
-  static const int          NUM_PLAY_HEADS = 4;
+  static constexpr int     NUM_PLAY_HEADS = 4;
   
 private:
   
+    const GLITCH_DELAY_INTERFACE&   m_interface;
+    
 	DELAY_BUFFER          	m_delay_buffer;
 	
 	PLAY_HEAD             	m_play_heads[NUM_PLAY_HEADS];
-	
-	float                 	m_loop_size_ratio[NUM_PLAY_HEADS];
-	float					m_jitter_ratio[NUM_PLAY_HEADS];
-	
-	bool                  	m_loop_moving;
-	
-	// store 'next' values, otherwise interrupt could be called during calculation of values
-	int                   	m_next_sample_size_in_bits;
-	bool                  	m_next_loop_moving;
-	bool                  	m_next_beat;
-	bool					m_next_freeze_active;
-	
+		
 public:
 	
-	GLITCH_DELAY_EFFECT();
+	GLITCH_DELAY_EFFECT(const GLITCH_DELAY_INTERFACE& interface);
 		
 	void                    update( const int16_t* input_sample_data, int num_samples ); // read from sample data, then output to it
     void                    fill_output( int16_t* output_sample_data, int num_samples, int channel );
-    
-	void                  	set_bit_depth( int sample_size_in_bits );
-	void                  	set_loop_moving( bool moving );
-	
-	void                  	set_loop_size( int play_head, float loop_size );
-	void                  	set_jitter( int play_head, float jitter );
-	
-	void                  	set_beat();
-	
-	void					set_freeze_active( bool active );
-	
+
 	// for plugin display only
 	int                   	num_heads() const;
 	void                  	head_ratio_details( int head, float& loop_start, float& loop_end, float& current_position ) const;

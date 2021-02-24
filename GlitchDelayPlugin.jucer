@@ -23,6 +23,10 @@
             file="Source/GlitchDelayEffect.cpp"/>
       <FILE id="nCjZs6" name="GlitchDelayEffect.h" compile="0" resource="0"
             file="Source/GlitchDelayEffect.h"/>
+      <FILE id="pXAaU8" name="GlitchDelayInterface.cpp" compile="1" resource="0"
+            file="Source/GlitchDelayInterface.cpp"/>
+      <FILE id="zPxVaX" name="GlitchDelayInterface.h" compile="0" resource="0"
+            file="Source/GlitchDelayInterface.h"/>
       <FILE id="yEYEtw" name="Util.cpp" compile="1" resource="0" file="Source/Util.cpp"/>
       <FILE id="k3NPJo" name="Util.h" compile="0" resource="0" file="Source/Util.h"/>
       <FILE id="Cel3iz" name="PluginProcessor.cpp" compile="1" resource="0"

@@ -18,6 +18,7 @@
 */
 
 class GLITCH_DELAY_EFFECT;
+class GLITCH_DELAY_INTERFACE;
 
 class GlitchDelayPluginAudioProcessor  : public AudioProcessor
 {
@@ -67,7 +68,9 @@ private:
     
     static float                                                MAX_FEEDBACK;
     
+    std::unique_ptr<GLITCH_DELAY_INTERFACE>                     m_interface;
     std::unique_ptr<GLITCH_DELAY_EFFECT>                        m_effect;
+    
     AudioSampleBuffer                                           m_prev_buffer;
     
     AudioParameterFloat*                                        m_mix;
