@@ -58,7 +58,7 @@ namespace
 		LOW_HEAD = 0,
 		NORMAL_HEAD = 1,
 		HIGH_HEAD = 2,
-		REVERSE_HEAD = 4
+		REVERSE_HEAD = 3
 	};
 }
 

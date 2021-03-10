@@ -1,5 +1,6 @@
 #pragma once
 
+#include <math.h>
 #include <type_traits>
 
 #include "CompileSwitches.h"
@@ -120,6 +121,11 @@ inline constexpr T round_to_int(float v)
     {
         return static_cast<T>( v - 0.5f );
     }
+}
+
+inline float fast_fractional_part( float arg )
+{
+    return arg - static_cast<int>(arg);
 }
 
 /////////////////////////////////////////////////////

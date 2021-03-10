@@ -1,5 +1,4 @@
 #include <string.h>
-#include <math.h>
 #include "CompileSwitches.h"
 #include "GlitchDelayEffect.h"
 #include "GlitchDelayInterface.h"
@@ -129,7 +128,7 @@ int PLAY_HEAD::loop_end() const
 
 int PLAY_HEAD::play_head_to_write_head_buffer_size() const
 {
-    const int half_jitter     = ( MAX_JITTER_SIZE / 2 ) + 1;
+    constexpr int half_jitter = ( MAX_JITTER_SIZE / 2 ) + 1;
     const int buffer_samples  = m_fade_samples + m_fade_samples + AUDIO_BLOCK_SAMPLES + half_jitter;
     
     return buffer_samples;
@@ -408,7 +407,7 @@ int16_t PLAY_HEAD::read_sample_with_cross_fade()
         m_initial_loop_crossfade_complete = true;
         
         m_current_play_head               = m_destination_play_head;
-        sample                            = m_delay_buffer.read_sample( m_current_play_head );
+        sample                            = m_delay_buffer.read_sample_with_speed( m_current_play_head, m_play_speed );
         
         m_delay_buffer.increment_head( m_current_play_head, m_play_speed );
         m_destination_play_head           = m_current_play_head;
@@ -732,7 +731,7 @@ int16_t DELAY_BUFFER::read_sample_with_speed( float index, float speed ) const
             // crossing 2 samples - calculate how much of each sample to use, then lerp between them
             // use the fractional part - if 0.3 'into' next sample, then we mix 0.3 of next and 0.7 of current
             float int_part;
-            float rem             = modff( nif, &int_part );
+            float rem             = fast_fractional_part(nif);
             const float t         = rem / speed;
             return lerp( read_sample(curr_index), read_sample(next_index), t );
         }
